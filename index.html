@@ -330,6 +330,32 @@
   .lc-ratio-label{ font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
   .lc-ratio-val{ font-family: var(--mono); font-size: 22px; font-weight: 600; }
   .lc-empty{ font-size: 13px; color: var(--ink-soft); padding: 4px 0 0; }
+
+  #lcVerdict{ cursor: pointer; }
+  #lcVerdict::after{ content: " ▾"; font-size: 9px; opacity: 0.7; }
+  #lcVerdict.open::after{ content: " ▴"; }
+  .lc-breakdown{
+    display: none;
+    margin: -2px 0 14px;
+    padding: 12px 14px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .lc-breakdown.show{ display: block; }
+  .lcb-row{ display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; }
+  .lcb-row .lcb-label{ color: var(--ink-soft); flex: 0 0 auto; }
+  .lcb-row .lcb-val{ text-align: right; }
+  .lcb-total{
+    display: flex;
+    justify-content: space-between;
+    padding-top: 8px;
+    margin-top: 6px;
+    border-top: 1px solid var(--line);
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -358,6 +384,12 @@
           <div class="lc-price" id="lcPrice">—</div>
           <div style="text-align:right; margin-top:4px;"><span class="pill" id="lcVerdict">—</span></div>
         </div>
+      </div>
+      <div class="lc-breakdown" id="lcBreakdown">
+        <div class="lcb-row"><span class="lcb-label">P/E</span><span class="lcb-val" id="lcbPE">—</span></div>
+        <div class="lcb-row"><span class="lcb-label">Forward P/E</span><span class="lcb-val" id="lcbFPE">—</span></div>
+        <div class="lcb-row"><span class="lcb-label">PEG</span><span class="lcb-val" id="lcbPEG">—</span></div>
+        <div class="lcb-total"><span>Total score</span><span id="lcbTotal">—</span></div>
       </div>
       <div class="lc-cards">
         <div class="lc-ratio">
@@ -713,15 +745,39 @@
 
     var badge = document.getElementById('lcVerdict');
     badge.className = 'pill ' + v.cls;
+    badge.classList.remove('open');
     badge.textContent = v.label + (v.max ? ' ' + v.total + '/' + v.max : '');
+    document.getElementById('lcBreakdown').classList.remove('show');
 
     fillLookupRatio('PE', row.trailingPE, {good: 15, fair: 25});
     fillLookupRatio('FPE', row.forwardPE, {good: 15, fair: 25});
     fillLookupRatio('PEG', row.pegRatio, {good: 1, fair: 2});
+    fillBreakdownRow('PE', row.trailingPE, {good: 15, fair: 25});
+    fillBreakdownRow('FPE', row.forwardPE, {good: 15, fair: 25});
+    fillBreakdownRow('PEG', row.pegRatio, {good: 1, fair: 2});
+    document.getElementById('lcbTotal').textContent = (v.max ? v.total + ' / ' + v.max : '0 / 0') + ' — ' + v.label;
 
     document.getElementById('lcEmpty').style.display = v.max === 0 ? 'block' : 'none';
     els.lookupCard.classList.add('show');
   }
+
+  function fillBreakdownRow(prefix, val, thresholds){
+    var el = document.getElementById('lcb' + prefix);
+    var score = scoreOne(val, thresholds.good, thresholds.fair);
+    var valText = (val === null || val === undefined || isNaN(val)) ? 'no data' : Number(val).toFixed(2);
+    var scoreText = score === null ? 'not scored (missing data)' :
+      score === 2 ? '2 pts — good (under ' + thresholds.good + ')' :
+      score === 1 ? '1 pt — fair (under ' + thresholds.fair + ')' :
+      '0 pts — weak (' + thresholds.fair + ' or higher)';
+    el.textContent = valText + '  →  ' + scoreText;
+  }
+
+  document.getElementById('lcVerdict').addEventListener('click', function(){
+    var badge = document.getElementById('lcVerdict');
+    var breakdown = document.getElementById('lcBreakdown');
+    var isOpen = breakdown.classList.toggle('show');
+    badge.classList.toggle('open', isOpen);
+  });
 
   function fillLookupRatio(prefix, val, thresholds){
     var score = scoreOne(val, thresholds.good, thresholds.fair);
