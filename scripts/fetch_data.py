@@ -95,39 +95,58 @@ def extract_headline(item):
     return item.get("title"), item.get("link")
 
 
-def score_sentiment(headlines):
-    if not headlines:
-        return None, 0
-    net = 0
-    for h in headlines:
-        low = h.lower()
-        net += sum(1 for w in POSITIVE_WORDS if w in low)
-        net -= sum(1 for w in NEGATIVE_WORDS if w in low)
-    label = "Positive" if net > 0 else "Negative" if net < 0 else "Neutral"
-    return label, net
+def score_headline(title):
+    """Returns (net score, matched positive words, matched negative words)
+    for one headline, so the site can show exactly why it counted the way
+    it did instead of just a bare number."""
+    low = title.lower()
+    pos_hits = sorted(w for w in POSITIVE_WORDS if w in low)
+    neg_hits = sorted(w for w in NEGATIVE_WORDS if w in low)
+    return len(pos_hits) - len(neg_hits), pos_hits, neg_hits
 
 
 def fetch_news(t):
     """Best-effort — a news failure should never blank out the valuation
-    data for a symbol, so this always returns something usable."""
-    headlines, top_title, top_url = [], None, None
+    data for a symbol, so this always returns something usable. Stores each
+    headline's own score + matched keywords (not just the aggregate) so the
+    site can explain the verdict, not just state it."""
+    headlines = []
     try:
         items = t.news or []
     except Exception:  # noqa: BLE001
         items = []
     for item in items[:5]:
         title, url = extract_headline(item)
-        if title:
-            headlines.append(title)
-            if top_title is None:
-                top_title, top_url = title, url
-    label, score = score_sentiment(headlines)
+        if not title:
+            continue
+        score, pos_hits, neg_hits = score_headline(title)
+        headlines.append({
+            "title": title,
+            "url": url,
+            "score": score,
+            "positiveWords": pos_hits,
+            "negativeWords": neg_hits,
+        })
+
+    if not headlines:
+        return {
+            "newsSentiment": None,
+            "newsScore": 0,
+            "newsCount": 0,
+            "headlines": [],
+            "topHeadline": None,
+            "topHeadlineUrl": None,
+        }
+
+    total_score = sum(h["score"] for h in headlines)
+    label = "Positive" if total_score > 0 else "Negative" if total_score < 0 else "Neutral"
     return {
         "newsSentiment": label,
-        "newsScore": score,
+        "newsScore": total_score,
         "newsCount": len(headlines),
-        "topHeadline": top_title,
-        "topHeadlineUrl": top_url,
+        "headlines": headlines,
+        "topHeadline": headlines[0]["title"],
+        "topHeadlineUrl": headlines[0]["url"],
     }
 
 

@@ -355,6 +355,28 @@
   .lc-headline a{ color: var(--ink); text-decoration: none; }
   .lc-headline a:hover{ color: var(--gold); text-decoration: underline; }
 
+  #lcNewsPill{ cursor: pointer; }
+  #lcNewsPill::after{ content: " ▾"; font-size: 9px; opacity: 0.7; }
+  #lcNewsPill.open::after{ content: " ▴"; }
+  .lc-news-breakdown{
+    display: none;
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 12.5px;
+  }
+  .lc-news-breakdown.show{ display: block; }
+  .lc-news-empty{ color: var(--ink-soft); }
+  .lc-news-item{ padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .lc-news-item:last-child{ border-bottom: none; }
+  .lc-news-item a{ color: var(--ink); text-decoration: none; font-weight: 600; }
+  .lc-news-item a:hover{ color: var(--gold); text-decoration: underline; }
+  .lc-news-why{ font-family: var(--mono); font-size: 11px; color: var(--ink-soft); margin-top: 3px; }
+  .lc-news-why .word-pos{ color: var(--good); }
+  .lc-news-why .word-neg{ color: var(--bad); }
+
   #lcVerdict{ cursor: pointer; }
   #lcVerdict::after{ content: " ▾"; font-size: 9px; opacity: 0.7; }
   #lcVerdict.open::after{ content: " ▴"; }
@@ -446,6 +468,7 @@
         </div>
       </div>
       <div class="lc-headline" id="lcHeadline" style="display:none;"></div>
+      <div class="lc-news-breakdown" id="lcNewsBreakdown"></div>
     </div>
   </div>
 
@@ -731,7 +754,7 @@
         '<td class="num">' + fmtCap(r.marketCap) + '</td>' +
         '<td class="num">' + fmtRange(r.fiftyTwoWeekLow, r.fiftyTwoWeekHigh) + '</td>' +
         '<td><span class="pill ' + analystInfo(r.recommendationKey).cls + '">' + analystInfo(r.recommendationKey).label + '</span></td>' +
-        '<td><span class="pill ' + newsInfo(r).cls + '">' + newsInfo(r).label + '</span></td>' +
+        '<td><span class="pill table-news-pill ' + newsInfo(r).cls + '">' + newsInfo(r).label + (r.newsCount ? ' (' + r.newsCount + ')' : '') + '</span></td>' +
         '<td><span class="pill ' + v.cls + '">' + v.label + (v.max ? ' ' + v.total + '/' + v.max : '') + '</span></td>' +
         '</tr>';
     }).join('');
@@ -792,10 +815,11 @@
     if (!sym) return;
     var row = allRows.find(function(r){ return r.symbol === sym; });
     if (!row) return;
-    selectSymbol(row);
+    var wantsNewsOpen = !!e.target.closest('.table-news-pill');
+    selectSymbol(row, wantsNewsOpen);
   });
 
-  function selectSymbol(row){
+  function selectSymbol(row, openNews){
     if (!row) return;
     selectedSymbol = row.symbol;
     els.lookupInput.value = row.symbol;
@@ -804,6 +828,10 @@
       tr.classList.toggle('selected-row', tr.getAttribute('data-symbol') === row.symbol);
     });
     showLookupCard(row);
+    if (openNews){
+      document.getElementById('lcNewsBreakdown').classList.add('show');
+      document.getElementById('lcNewsPill').classList.add('open');
+    }
     els.detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -854,7 +882,10 @@
     var n = newsInfo(row);
     var nPill = document.getElementById('lcNewsPill');
     nPill.className = 'pill ' + n.cls;
+    nPill.classList.remove('open');
     nPill.textContent = n.label + (row.newsCount ? ' (' + row.newsCount + ')' : '');
+    document.getElementById('lcNewsBreakdown').classList.remove('show');
+    renderNewsBreakdown(row);
 
     var headlineEl = document.getElementById('lcHeadline');
     if (row.topHeadline){
@@ -869,6 +900,41 @@
       headlineEl.textContent = '';
     }
   }
+
+  function renderNewsBreakdown(row){
+    var el = document.getElementById('lcNewsBreakdown');
+    var headlines = row.headlines || [];
+    if (headlines.length === 0){
+      el.innerHTML = '<div class="lc-news-empty">No recent headlines came back for this symbol in the last data pull.</div>';
+      return;
+    }
+    el.innerHTML = headlines.map(function(h){
+      var why;
+      if ((h.positiveWords || []).length === 0 && (h.negativeWords || []).length === 0){
+        why = 'No sentiment keywords matched — counted as neutral.';
+      } else {
+        var parts = [];
+        if (h.positiveWords && h.positiveWords.length){
+          parts.push('<span class="word-pos">+ ' + h.positiveWords.map(escapeHtml).join(', +') + '</span>');
+        }
+        if (h.negativeWords && h.negativeWords.length){
+          parts.push('<span class="word-neg">− ' + h.negativeWords.map(escapeHtml).join(', −') + '</span>');
+        }
+        why = parts.join('  ·  ');
+      }
+      var titleHtml = h.url
+        ? '<a href="' + escapeHtml(h.url) + '" target="_blank" rel="noopener">' + escapeHtml(h.title) + '</a>'
+        : escapeHtml(h.title);
+      return '<div class="lc-news-item">' + titleHtml + '<div class="lc-news-why">' + why + '</div></div>';
+    }).join('');
+  }
+
+  document.getElementById('lcNewsPill').addEventListener('click', function(){
+    var pill = document.getElementById('lcNewsPill');
+    var panel = document.getElementById('lcNewsBreakdown');
+    var isOpen = panel.classList.toggle('show');
+    pill.classList.toggle('open', isOpen);
+  });
 
   function fillBreakdownRow(prefix, val, thresholds){
     var el = document.getElementById('lcb' + prefix);
