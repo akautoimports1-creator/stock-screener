@@ -6,6 +6,9 @@ on:
     - cron: "0 6 * * *"
   workflow_dispatch: {}  # lets you trigger a run manually from the Actions tab
 
+permissions:
+  contents: write
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
