@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ratio Exchange — undervalued stock screener</title>
+<meta name="description" content="Screen the whole US market by P/E, forward P/E, and PEG, refreshed nightly.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #14201c;
+    --ink-soft: #445048;
+    --paper: #eef1ec;
+    --paper-raised: #ffffff;
+    --line: #d3d9d0;
+    --line-strong: #a9b3a4;
+    --gold: #a6763a;
+    --gold-soft: #efe2cd;
+    --good: #2f6b4f;
+    --good-bg: #dfeee3;
+    --warn: #8a6a1f;
+    --warn-bg: #f3ead0;
+    --bad: #9c3b34;
+    --bad-bg: #f4dedb;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+    --serif: 'Fraunces', Georgia, serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ink: #e9ede7;
+      --ink-soft: #aab5ac;
+      --paper: #10140f;
+      --paper-raised: #171d16;
+      --line: #2a332a;
+      --line-strong: #3d493c;
+      --gold: #d0a260;
+      --gold-soft: #2e2716;
+      --good: #7cc79c;
+      --good-bg: #163326;
+      --warn: #d8b95d;
+      --warn-bg: #332c14;
+      --bad: #e08b83;
+      --bad-bg: #38201d;
+      color-scheme: dark;
+    }
+  }
+  *{ box-sizing: border-box; }
+  html, body{ margin: 0; }
+  body{
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+  }
+  .wrap{ max-width: 1180px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  header{ margin-bottom: 22px; }
+  .eyebrow{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before{ content:""; width:6px; height:6px; background: var(--gold); display:inline-block; }
+  h1{
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(26px, 4vw, 34px);
+    margin: 6px 0 6px;
+    letter-spacing: -0.01em;
+  }
+  .sub{ color: var(--ink-soft); font-size: 14px; max-width: 68ch; }
+  .meta-line{
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+  .meta-line span{ color: var(--ink); }
+
+  .panel{
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+
+  .filters{
+    padding: 16px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    align-items: end;
+  }
+  @media (max-width: 900px){ .filters{ grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 560px){ .filters{ grid-template-columns: repeat(2, 1fr); } }
+  .field label{
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  .field.wide{ grid-column: span 2; }
+  input, select{
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    background: var(--paper-raised);
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+    border-radius: 7px;
+    padding: 9px 10px;
+    outline: none;
+  }
+  input:focus, select:focus{ border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
+  .range-pair{ display: flex; gap: 6px; }
+
+  .toggles{
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 0 16px 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+  }
+  .toggle{ display: flex; align-items: center; gap: 6px; }
+  .toggle input{ width: auto; accent-color: var(--gold); }
+  .clear-btn{
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--gold);
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .resultbar{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 2px 10px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  .tablewrap{
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow-x: auto;
+  }
+  table{ width: 100%; border-collapse: collapse; min-width: 760px; }
+  thead th{
+    position: sticky; top: 0;
+    background: var(--paper-raised);
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  thead th.sorted{ color: var(--gold); }
+  thead th .arrow{ font-size: 9px; margin-left: 3px; }
+  tbody td{
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13.5px;
+    white-space: nowrap;
+  }
+  tbody tr:hover{ background: var(--gold-soft); }
+  .num{ font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+  .sym{ font-family: var(--mono); font-weight: 600; }
+  .name-cell{ max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); font-size: 12.5px; }
+  .pill{
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .pill.good{ background: var(--good-bg); color: var(--good); }
+  .pill.warn{ background: var(--warn-bg); color: var(--warn); }
+  .pill.bad{ background: var(--bad-bg); color: var(--bad); }
+  .pill.na{ background: var(--line); color: var(--ink-soft); }
+
+  .pager{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 0 0;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .pager button{
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .pager button:disabled{ opacity: 0.4; cursor: default; }
+
+  .empty-state, .loading-state{
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+
+  footer{
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  a{ color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Market Screen</div>
+    <h1>Ratio Exchange</h1>
+    <p class="sub">Every US-listed common stock, scored on P/E, forward P/E, and PEG. Refreshed nightly. Not financial advice — a filter to point your own research at.</p>
+    <div class="meta-line" id="metaLine">Loading data…</div>
+  </header>
+
+  <div class="panel filters">
+    <div class="field wide">
+      <label for="search">Search symbol or name</label>
+      <input type="text" id="search" placeholder="AAPL, Nvidia…" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="sector">Sector</label>
+      <select id="sector"><option value="">All sectors</option></select>
+    </div>
+    <div class="field">
+      <label>P/E range</label>
+      <div class="range-pair">
+        <input type="text" inputmode="decimal" id="peMin" placeholder="min">
+        <input type="text" inputmode="decimal" id="peMax" placeholder="max">
+      </div>
+    </div>
+    <div class="field">
+      <label>Forward P/E range</label>
+      <div class="range-pair">
+        <input type="text" inputmode="decimal" id="fpeMin" placeholder="min">
+        <input type="text" inputmode="decimal" id="fpeMax" placeholder="max">
+      </div>
+    </div>
+    <div class="field">
+      <label>PEG range</label>
+      <div class="range-pair">
+        <input type="text" inputmode="decimal" id="pegMin" placeholder="min">
+        <input type="text" inputmode="decimal" id="pegMax" placeholder="max">
+      </div>
+    </div>
+    <div class="field">
+      <label>Market cap ≥ ($B)</label>
+      <input type="text" inputmode="decimal" id="mcapMin" placeholder="e.g. 1">
+    </div>
+    <div class="toggles" style="grid-column: 1 / -1;">
+      <label class="toggle"><input type="checkbox" id="onlyUndervalued"> Undervalued only (score 5-6)</label>
+      <label class="toggle"><input type="checkbox" id="hideNoData" checked> Hide rows with no data</label>
+      <button class="clear-btn" id="clearFilters" type="button">Clear filters</button>
+    </div>
+  </div>
+
+  <div class="resultbar">
+    <span id="resultCount">—</span>
+    <span id="sortHint">Click a column to sort</span>
+  </div>
+
+  <div class="tablewrap">
+    <table id="stockTable">
+      <thead>
+        <tr>
+          <th data-key="symbol">Symbol</th>
+          <th data-key="name">Name</th>
+          <th data-key="sector">Sector</th>
+          <th data-key="price" class="num">Price</th>
+          <th data-key="trailingPE" class="num">P/E</th>
+          <th data-key="forwardPE" class="num">Fwd P/E</th>
+          <th data-key="pegRatio" class="num">PEG</th>
+          <th data-key="marketCap" class="num">Mkt Cap</th>
+          <th data-key="_score">Verdict</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="9" class="loading-state">Loading stock data…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <button id="prevPage" type="button">← Prev</button>
+    <span id="pageLabel">Page 1</span>
+    <button id="nextPage" type="button">Next →</button>
+  </div>
+
+  <footer>
+    Data: Yahoo Finance, pulled nightly by an automated job — unofficial and best-effort, so some tickers (especially small caps and recent IPOs) will show missing values. Thresholds are general rules of thumb, not sector-adjusted. Use this as a first filter, not a verdict to trade on.
+  </footer>
+</div>
+
+<script>
+(function(){
+  var allRows = [];
+  var filteredRows = [];
+  var sortKey = 'marketCap';
+  var sortDir = -1;
+  var page = 1;
+  var PAGE_SIZE = 50;
+
+  var els = {
+    search: document.getElementById('search'),
+    sector: document.getElementById('sector'),
+    peMin: document.getElementById('peMin'),
+    peMax: document.getElementById('peMax'),
+    fpeMin: document.getElementById('fpeMin'),
+    fpeMax: document.getElementById('fpeMax'),
+    pegMin: document.getElementById('pegMin'),
+    pegMax: document.getElementById('pegMax'),
+    mcapMin: document.getElementById('mcapMin'),
+    onlyUndervalued: document.getElementById('onlyUndervalued'),
+    hideNoData: document.getElementById('hideNoData'),
+    clearFilters: document.getElementById('clearFilters'),
+    tableBody: document.getElementById('tableBody'),
+    resultCount: document.getElementById('resultCount'),
+    metaLine: document.getElementById('metaLine'),
+    prevPage: document.getElementById('prevPage'),
+    nextPage: document.getElementById('nextPage'),
+    pageLabel: document.getElementById('pageLabel')
+  };
+
+  function scoreOne(val, good, fair){
+    if (val === null || val === undefined || isNaN(val) || val < 0) return null;
+    if (val < good) return 2;
+    if (val < fair) return 1;
+    return 0;
+  }
+
+  function computeVerdict(row){
+    var sPE = scoreOne(row.trailingPE, 15, 25);
+    var sFPE = scoreOne(row.forwardPE, 15, 25);
+    var sPEG = scoreOne(row.pegRatio, 1, 2);
+    var total = 0, max = 0;
+    [sPE, sFPE, sPEG].forEach(function(s){ if (s !== null){ total += s; max += 2; } });
+    if (max === 0) return { label: 'No data', cls: 'na', total: 0, max: 0 };
+    var ratio = total / max;
+    if (ratio >= 5/6) return { label: 'Undervalued', cls: 'good', total: total, max: max };
+    if (ratio >= 3/6) return { label: 'Fair value', cls: 'warn', total: total, max: max };
+    return { label: 'Overvalued', cls: 'bad', total: total, max: max };
+  }
+
+  function fmtNum(v, decimals){
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    return Number(v).toFixed(decimals === undefined ? 2 : decimals);
+  }
+  function fmtCap(v){
+    if (!v) return '—';
+    if (v >= 1e12) return (v/1e12).toFixed(2) + 'T';
+    if (v >= 1e9) return (v/1e9).toFixed(2) + 'B';
+    if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
+    return String(v);
+  }
+  function fmtPrice(v){
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    return '$' + Number(v).toFixed(2);
+  }
+
+  function populateSectors(rows){
+    var sectors = Array.from(new Set(rows.map(function(r){ return r.sector; }).filter(Boolean))).sort();
+    sectors.forEach(function(s){
+      var opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      els.sector.appendChild(opt);
+    });
+  }
+
+  function num(v){
+    if (v === '' || v === null || v === undefined) return null;
+    var n = parseFloat(v);
+    return isNaN(n) ? null : n;
+  }
+
+  function applyFilters(){
+    var q = els.search.value.trim().toLowerCase();
+    var sector = els.sector.value;
+    var peMin = num(els.peMin.value), peMax = num(els.peMax.value);
+    var fpeMin = num(els.fpeMin.value), fpeMax = num(els.fpeMax.value);
+    var pegMin = num(els.pegMin.value), pegMax = num(els.pegMax.value);
+    var mcapMin = num(els.mcapMin.value);
+    var onlyUndervalued = els.onlyUndervalued.checked;
+    var hideNoData = els.hideNoData.checked;
+
+    filteredRows = allRows.filter(function(r){
+      if (r.error) return false;
+      if (q && !((r.symbol||'').toLowerCase().indexOf(q) > -1 || (r.name||'').toLowerCase().indexOf(q) > -1)) return false;
+      if (sector && r.sector !== sector) return false;
+      if (peMin !== null && !(r.trailingPE >= peMin)) return false;
+      if (peMax !== null && !(r.trailingPE <= peMax)) return false;
+      if (fpeMin !== null && !(r.forwardPE >= fpeMin)) return false;
+      if (fpeMax !== null && !(r.forwardPE <= fpeMax)) return false;
+      if (pegMin !== null && !(r.pegRatio >= pegMin)) return false;
+      if (pegMax !== null && !(r.pegRatio <= pegMax)) return false;
+      if (mcapMin !== null && !(r.marketCap >= mcapMin * 1e9)) return false;
+
+      var verdict = computeVerdict(r);
+      r._verdict = verdict;
+
+      if (hideNoData && verdict.max === 0) return false;
+      if (onlyUndervalued && verdict.label !== 'Undervalued') return false;
+
+      return true;
+    });
+
+    sortRows();
+    page = 1;
+    render();
+  }
+
+  function sortRows(){
+    filteredRows.sort(function(a, b){
+      var av, bv;
+      if (sortKey === '_score'){
+        av = a._verdict ? a._verdict.total / (a._verdict.max || 1) : -1;
+        bv = b._verdict ? b._verdict.total / (b._verdict.max || 1) : -1;
+      } else {
+        av = a[sortKey]; bv = b[sortKey];
+      }
+      if (typeof av === 'string' || typeof bv === 'string'){
+        av = (av || '').toString().toLowerCase();
+        bv = (bv || '').toString().toLowerCase();
+        if (av < bv) return -1 * sortDir;
+        if (av > bv) return 1 * sortDir;
+        return 0;
+      }
+      av = (av === null || av === undefined || isNaN(av)) ? -Infinity : av;
+      bv = (bv === null || bv === undefined || isNaN(bv)) ? -Infinity : bv;
+      return (av - bv) * sortDir;
+    });
+  }
+
+  function render(){
+    var total = filteredRows.length;
+    els.resultCount.textContent = total.toLocaleString() + ' of ' + allRows.length.toLocaleString() + ' symbols';
+
+    var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (page > totalPages) page = totalPages;
+    var start = (page - 1) * PAGE_SIZE;
+    var pageRows = filteredRows.slice(start, start + PAGE_SIZE);
+
+    els.pageLabel.textContent = 'Page ' + page + ' of ' + totalPages;
+    els.prevPage.disabled = page <= 1;
+    els.nextPage.disabled = page >= totalPages;
+
+    if (pageRows.length === 0){
+      els.tableBody.innerHTML = '<tr><td colspan="9" class="empty-state">No stocks match these filters.</td></tr>';
+      return;
+    }
+
+    var html = pageRows.map(function(r){
+      var v = r._verdict || computeVerdict(r);
+      return '<tr>' +
+        '<td class="sym">' + r.symbol + '</td>' +
+        '<td class="name-cell" title="' + escapeHtml(r.name || '') + '">' + escapeHtml(r.name || '—') + '</td>' +
+        '<td>' + escapeHtml(r.sector || '—') + '</td>' +
+        '<td class="num">' + fmtPrice(r.price) + '</td>' +
+        '<td class="num">' + fmtNum(r.trailingPE) + '</td>' +
+        '<td class="num">' + fmtNum(r.forwardPE) + '</td>' +
+        '<td class="num">' + fmtNum(r.pegRatio) + '</td>' +
+        '<td class="num">' + fmtCap(r.marketCap) + '</td>' +
+        '<td><span class="pill ' + v.cls + '">' + v.label + (v.max ? ' ' + v.total + '/' + v.max : '') + '</span></td>' +
+        '</tr>';
+    }).join('');
+    els.tableBody.innerHTML = html;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  document.querySelectorAll('#stockTable thead th').forEach(function(th){
+    th.addEventListener('click', function(){
+      var key = th.getAttribute('data-key');
+      if (sortKey === key){ sortDir *= -1; } else { sortKey = key; sortDir = key === 'symbol' || key === 'name' || key === 'sector' ? 1 : -1; }
+      document.querySelectorAll('#stockTable thead th').forEach(function(h){ h.classList.remove('sorted'); });
+      th.classList.add('sorted');
+      sortRows();
+      page = 1;
+      render();
+    });
+  });
+
+  [els.search, els.peMin, els.peMax, els.fpeMin, els.fpeMax, els.pegMin, els.pegMax, els.mcapMin].forEach(function(el){
+    el.addEventListener('input', debounce(applyFilters, 200));
+  });
+  [els.sector, els.onlyUndervalued, els.hideNoData].forEach(function(el){
+    el.addEventListener('change', applyFilters);
+  });
+  els.clearFilters.addEventListener('click', function(){
+    els.search.value = ''; els.sector.value = '';
+    els.peMin.value = ''; els.peMax.value = '';
+    els.fpeMin.value = ''; els.fpeMax.value = '';
+    els.pegMin.value = ''; els.pegMax.value = '';
+    els.mcapMin.value = '';
+    els.onlyUndervalued.checked = false;
+    els.hideNoData.checked = true;
+    applyFilters();
+  });
+  els.prevPage.addEventListener('click', function(){ if (page > 1){ page--; render(); } });
+  els.nextPage.addEventListener('click', function(){ page++; render(); });
+
+  function debounce(fn, ms){
+    var t;
+    return function(){
+      clearTimeout(t);
+      var args = arguments;
+      t = setTimeout(function(){ fn.apply(null, args); }, ms);
+    };
+  }
+
+  function loadMeta(){
+    fetch('./data/meta.json', { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(meta){
+        if (!meta) { els.metaLine.textContent = ''; return; }
+        var when = new Date(meta.last_updated);
+        els.metaLine.innerHTML = 'Last refreshed <span>' + when.toLocaleString() + '</span> · ' +
+          '<span>' + meta.total_symbols.toLocaleString() + '</span> symbols · ' +
+          '<span>' + meta.with_peg.toLocaleString() + '</span> with a PEG ratio';
+      })
+      .catch(function(){ els.metaLine.textContent = ''; });
+  }
+
+  function loadStocks(){
+    fetch('./data/stocks.json', { cache: 'no-store' })
+      .then(function(r){
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function(rows){
+        allRows = rows;
+        populateSectors(rows);
+        applyFilters();
+      })
+      .catch(function(err){
+        els.tableBody.innerHTML = '<tr><td colspan="9" class="empty-state">Could not load stock data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
+      });
+  }
+
+  loadMeta();
+  loadStocks();
+})();
+</script>
+</body>
+</html>

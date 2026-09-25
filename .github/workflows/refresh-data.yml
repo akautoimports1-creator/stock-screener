@@ -1,0 +1,71 @@
+name: Refresh stock data
+
+on:
+  schedule:
+    # 06:00 UTC daily (before US market open). Adjust as you like.
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}  # lets you trigger a run manually from the Actions tab
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    strategy:
+      # 10 shards in parallel keeps each job's runtime reasonable and spreads
+      # the request volume out instead of hammering Yahoo from one runner.
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Fetch shard ${{ matrix.shard }}
+        env:
+          SHARD_INDEX: ${{ matrix.shard }}
+          SHARD_COUNT: 10
+        run: python scripts/fetch_data.py
+
+      - name: Upload shard result
+        uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.shard }}
+          path: data/shard-${{ matrix.shard }}.json
+          retention-days: 1
+
+  merge:
+    needs: fetch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download all shard results
+        uses: actions/download-artifact@v4
+        with:
+          path: data
+          pattern: shard-*
+          merge-multiple: true
+
+      - name: Merge shards into stocks.json
+        run: python scripts/merge.py
+
+      - name: Clean up shard files
+        run: rm -f data/shard-*.json
+
+      - name: Commit updated data
+        run: |
+          git config user.name "stock-screener-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/stocks.json data/meta.json
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "Refresh stock data $(date -u +%Y-%m-%d)"
+          git push
