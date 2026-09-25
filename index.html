@@ -369,13 +369,9 @@
   }
   .lc-news-breakdown.show{ display: block; }
   .lc-news-empty{ color: var(--ink-soft); }
-  .lc-news-item{ padding: 8px 0; border-bottom: 1px solid var(--line); }
-  .lc-news-item:last-child{ border-bottom: none; }
-  .lc-news-item a{ color: var(--ink); text-decoration: none; font-weight: 600; }
-  .lc-news-item a:hover{ color: var(--gold); text-decoration: underline; }
-  .lc-news-why{ font-family: var(--mono); font-size: 11px; color: var(--ink-soft); margin-top: 3px; }
-  .lc-news-why .word-pos{ color: var(--good); }
-  .lc-news-why .word-neg{ color: var(--bad); }
+  .lc-news-sentence{ line-height: 1.6; }
+  .lc-news-sentence .word-pos{ color: var(--good); font-family: var(--mono); }
+  .lc-news-sentence .word-neg{ color: var(--bad); font-family: var(--mono); }
 
   #lcVerdict{ cursor: pointer; }
   #lcVerdict::after{ content: " ▾"; font-size: 9px; opacity: 0.7; }
@@ -908,25 +904,31 @@
       el.innerHTML = '<div class="lc-news-empty">No recent headlines came back for this symbol in the last data pull.</div>';
       return;
     }
-    el.innerHTML = headlines.map(function(h){
-      var why;
-      if ((h.positiveWords || []).length === 0 && (h.negativeWords || []).length === 0){
-        why = 'No sentiment keywords matched — counted as neutral.';
-      } else {
-        var parts = [];
-        if (h.positiveWords && h.positiveWords.length){
-          parts.push('<span class="word-pos">+ ' + h.positiveWords.map(escapeHtml).join(', +') + '</span>');
-        }
-        if (h.negativeWords && h.negativeWords.length){
-          parts.push('<span class="word-neg">− ' + h.negativeWords.map(escapeHtml).join(', −') + '</span>');
-        }
-        why = parts.join('  ·  ');
-      }
-      var titleHtml = h.url
-        ? '<a href="' + escapeHtml(h.url) + '" target="_blank" rel="noopener">' + escapeHtml(h.title) + '</a>'
-        : escapeHtml(h.title);
-      return '<div class="lc-news-item">' + titleHtml + '<div class="lc-news-why">' + why + '</div></div>';
-    }).join('');
+
+    var posCount = 0, negCount = 0, neutralCount = 0;
+    var posWords = [], negWords = [];
+    headlines.forEach(function(h){
+      if (h.score > 0) posCount++;
+      else if (h.score < 0) negCount++;
+      else neutralCount++;
+      (h.positiveWords || []).forEach(function(w){ if (posWords.indexOf(w) === -1) posWords.push(w); });
+      (h.negativeWords || []).forEach(function(w){ if (negWords.indexOf(w) === -1) negWords.push(w); });
+    });
+
+    var sentiment = row.newsSentiment || 'Neutral';
+    var sentence;
+    if (posWords.length === 0 && negWords.length === 0){
+      sentence = 'The last ' + headlines.length + ' headline' + (headlines.length === 1 ? '' : 's') +
+        " didn't use strong positive or negative language, so it's scored as Neutral.";
+    } else {
+      sentence = 'Trending ' + sentiment.toLowerCase() + ' — ' + posCount + ' of ' + headlines.length +
+        ' recent headline' + (headlines.length === 1 ? '' : 's') + ' read positive' +
+        (posWords.length ? ' (words like <span class="word-pos">' + posWords.slice(0, 4).map(escapeHtml).join(', ') + '</span>)' : '') +
+        ', ' + negCount + ' read negative' +
+        (negWords.length ? ' (words like <span class="word-neg">' + negWords.slice(0, 4).map(escapeHtml).join(', ') + '</span>)' : '') +
+        (neutralCount ? ', ' + neutralCount + ' neutral.' : '.');
+    }
+    el.innerHTML = '<div class="lc-news-sentence">' + sentence + '</div>';
   }
 
   document.getElementById('lcNewsPill').addEventListener('click', function(){
