@@ -241,6 +241,87 @@
     color: var(--ink-soft);
   }
   a{ color: var(--gold); }
+
+  .lookup{
+    padding: 18px;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  .lookup-label{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .lookup-inputwrap{ position: relative; }
+  #lookupInput{
+    width: 100%;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 12px 14px;
+    text-transform: uppercase;
+  }
+  .suggest{
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: var(--paper-raised);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 20;
+    display: none;
+  }
+  .suggest.show{ display: block; }
+  .suggest-item{
+    padding: 9px 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13.5px;
+    border-bottom: 1px solid var(--line);
+  }
+  .suggest-item:last-child{ border-bottom: none; }
+  .suggest-item:hover, .suggest-item.active{ background: var(--gold-soft); }
+  .suggest-item .s-sym{ font-family: var(--mono); font-weight: 700; }
+  .suggest-item .s-name{ color: var(--ink-soft); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .lookup-card{ margin-top: 16px; display: none; }
+  .lookup-card.show{ display: block; }
+  .lc-head{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .lc-name{ font-family: var(--serif); font-size: 20px; font-weight: 600; }
+  .lc-meta{ font-family: var(--mono); font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+  .lc-price{ font-family: var(--mono); font-size: 22px; font-weight: 600; text-align: right; }
+  .lc-cards{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 560px){ .lc-cards{ grid-template-columns: 1fr; } }
+  .lc-ratio{
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 13px 14px;
+  }
+  .lc-ratio-top{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .lc-ratio-label{ font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+  .lc-ratio-val{ font-family: var(--mono); font-size: 22px; font-weight: 600; }
+  .lc-empty{ font-size: 13px; color: var(--ink-soft); padding: 4px 0 0; }
 </style>
 </head>
 <body>
@@ -251,6 +332,41 @@
     <p class="sub">Every US-listed common stock, scored on P/E, forward P/E, and PEG. Refreshed nightly. Not financial advice — a filter to point your own research at.</p>
     <div class="meta-line" id="metaLine">Loading data…</div>
   </header>
+
+  <div class="panel lookup">
+    <div class="lookup-label">Look up a symbol</div>
+    <div class="lookup-inputwrap">
+      <input type="text" id="lookupInput" placeholder="Type a ticker — AAPL, TSLA, NVDA…" autocomplete="off" spellcheck="false">
+      <div class="suggest" id="lookupSuggest"></div>
+    </div>
+    <div class="lookup-card" id="lookupCard">
+      <div class="lc-head">
+        <div>
+          <div class="lc-name" id="lcName">—</div>
+          <div class="lc-meta" id="lcMeta">—</div>
+        </div>
+        <div>
+          <div class="lc-price" id="lcPrice">—</div>
+          <div style="text-align:right; margin-top:4px;"><span class="pill" id="lcVerdict">—</span></div>
+        </div>
+      </div>
+      <div class="lc-cards">
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">P/E</span><span class="mark na" id="lcMarkPE">–</span></div>
+          <div class="lc-ratio-val" id="lcPE">—</div>
+        </div>
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">Forward P/E</span><span class="mark na" id="lcMarkFPE">–</span></div>
+          <div class="lc-ratio-val" id="lcFPE">—</div>
+        </div>
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">PEG</span><span class="mark na" id="lcMarkPEG">–</span></div>
+          <div class="lc-ratio-val" id="lcPEG">—</div>
+        </div>
+      </div>
+      <div class="lc-empty" id="lcEmpty" style="display:none;">No data available for this symbol yet.</div>
+    </div>
+  </div>
 
   <div class="panel filters">
     <div class="field wide">
@@ -357,7 +473,10 @@
     metaLine: document.getElementById('metaLine'),
     prevPage: document.getElementById('prevPage'),
     nextPage: document.getElementById('nextPage'),
-    pageLabel: document.getElementById('pageLabel')
+    pageLabel: document.getElementById('pageLabel'),
+    lookupInput: document.getElementById('lookupInput'),
+    lookupSuggest: document.getElementById('lookupSuggest'),
+    lookupCard: document.getElementById('lookupCard')
   };
 
   function scoreOne(val, good, fair){
@@ -549,6 +668,124 @@
       t = setTimeout(function(){ fn.apply(null, args); }, ms);
     };
   }
+
+  // --- Quick symbol lookup ---
+  var lookupActiveIndex = -1;
+  var lookupMatches = [];
+
+  function lookupSuggestions(q){
+    q = q.trim().toUpperCase();
+    if (!q) return [];
+    var starts = [], contains = [];
+    for (var i = 0; i < allRows.length; i++){
+      var r = allRows[i];
+      if (!r.symbol) continue;
+      var sym = r.symbol.toUpperCase();
+      var name = (r.name || '').toUpperCase();
+      if (sym.indexOf(q) === 0){ starts.push(r); }
+      else if (sym.indexOf(q) > -1 || name.indexOf(q) > -1){ contains.push(r); }
+      if (starts.length >= 8) break;
+    }
+    return starts.concat(contains).slice(0, 8);
+  }
+
+  function renderSuggestions(matches){
+    lookupMatches = matches;
+    lookupActiveIndex = -1;
+    if (matches.length === 0){
+      els.lookupSuggest.classList.remove('show');
+      els.lookupSuggest.innerHTML = '';
+      return;
+    }
+    els.lookupSuggest.innerHTML = matches.map(function(r, i){
+      return '<div class="suggest-item" data-idx="' + i + '">' +
+        '<span class="s-sym">' + escapeHtml(r.symbol) + '</span>' +
+        '<span class="s-name">' + escapeHtml(r.name || '') + '</span>' +
+        '</div>';
+    }).join('');
+    els.lookupSuggest.classList.add('show');
+    Array.prototype.forEach.call(els.lookupSuggest.querySelectorAll('.suggest-item'), function(el){
+      el.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        var idx = parseInt(el.getAttribute('data-idx'), 10);
+        selectSymbol(lookupMatches[idx]);
+      });
+    });
+  }
+
+  function selectSymbol(row){
+    if (!row) return;
+    els.lookupInput.value = row.symbol;
+    els.lookupSuggest.classList.remove('show');
+    showLookupCard(row);
+  }
+
+  function showLookupCard(row){
+    var v = computeVerdict(row);
+    document.getElementById('lcName').textContent = row.name || row.symbol;
+    document.getElementById('lcMeta').textContent = [row.symbol, row.sector, row.exchange].filter(Boolean).join(' · ');
+    document.getElementById('lcPrice').textContent = fmtPrice(row.price);
+
+    var badge = document.getElementById('lcVerdict');
+    badge.className = 'pill ' + v.cls;
+    badge.textContent = v.label + (v.max ? ' ' + v.total + '/' + v.max : '');
+
+    fillLookupRatio('PE', row.trailingPE, {good: 15, fair: 25});
+    fillLookupRatio('FPE', row.forwardPE, {good: 15, fair: 25});
+    fillLookupRatio('PEG', row.pegRatio, {good: 1, fair: 2});
+
+    document.getElementById('lcEmpty').style.display = v.max === 0 ? 'block' : 'none';
+    els.lookupCard.classList.add('show');
+  }
+
+  function fillLookupRatio(prefix, val, thresholds){
+    var score = scoreOne(val, thresholds.good, thresholds.fair);
+    var mark = document.getElementById('lcMark' + prefix);
+    var valEl = document.getElementById('lc' + prefix);
+    mark.className = 'mark ' + (score === null ? 'na' : score === 2 ? 'good' : score === 1 ? 'warn' : 'bad');
+    mark.textContent = score === null ? '–' : score === 2 ? '✓' : score === 1 ? '~' : '✕';
+    valEl.textContent = (val === null || val === undefined || isNaN(val)) ? '—' : Number(val).toFixed(2);
+  }
+
+  els.lookupInput.addEventListener('input', debounce(function(){
+    renderSuggestions(lookupSuggestions(els.lookupInput.value));
+  }, 120));
+
+  els.lookupInput.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowDown'){
+      e.preventDefault();
+      if (lookupMatches.length === 0) return;
+      lookupActiveIndex = Math.min(lookupActiveIndex + 1, lookupMatches.length - 1);
+      highlightActive();
+    } else if (e.key === 'ArrowUp'){
+      e.preventDefault();
+      if (lookupMatches.length === 0) return;
+      lookupActiveIndex = Math.max(lookupActiveIndex - 1, 0);
+      highlightActive();
+    } else if (e.key === 'Enter'){
+      if (lookupActiveIndex > -1 && lookupMatches[lookupActiveIndex]){
+        selectSymbol(lookupMatches[lookupActiveIndex]);
+      } else {
+        var exact = allRows.find(function(r){ return r.symbol && r.symbol.toUpperCase() === els.lookupInput.value.trim().toUpperCase(); });
+        if (exact) selectSymbol(exact);
+        else if (lookupMatches[0]) selectSymbol(lookupMatches[0]);
+      }
+    } else if (e.key === 'Escape'){
+      els.lookupSuggest.classList.remove('show');
+    }
+  });
+
+  function highlightActive(){
+    Array.prototype.forEach.call(els.lookupSuggest.querySelectorAll('.suggest-item'), function(el, i){
+      el.classList.toggle('active', i === lookupActiveIndex);
+    });
+  }
+
+  document.addEventListener('click', function(e){
+    if (!els.lookupSuggest.contains(e.target) && e.target !== els.lookupInput){
+      els.lookupSuggest.classList.remove('show');
+    }
+  });
 
   function loadMeta(){
     fetch('./data/meta.json', { cache: 'no-store' })
