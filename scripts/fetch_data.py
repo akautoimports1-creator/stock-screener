@@ -51,6 +51,85 @@ FIELDS = [
     "targetMeanPrice", "recommendationKey",
 ]
 
+# Crude, free, keyword-based headline sentiment. This is NOT real NLP — it's a
+# word-count heuristic over the last few headlines Yahoo has for the symbol.
+# It's meant as a rough "is recent coverage leaning positive or negative"
+# signal, not investment research.
+POSITIVE_WORDS = {
+    "beat", "beats", "beating", "surge", "surges", "surged", "soar", "soars",
+    "soared", "jump", "jumps", "jumped", "rally", "rallies", "rallied",
+    "upgrade", "upgraded", "outperform", "record", "strong", "growth",
+    "profit", "profitable", "gain", "gains", "bullish", "exceed", "exceeds",
+    "exceeded", "tops", "top", "raises", "raised", "expands", "expansion",
+    "wins", "win", "approval", "approved", "partnership", "breakthrough",
+    "positive", "boosts", "boost", "rebound", "rebounds", "upbeat",
+}
+NEGATIVE_WORDS = {
+    "miss", "misses", "missed", "plunge", "plunges", "plunged", "fall",
+    "falls", "fell", "drop", "drops", "dropped", "downgrade", "downgraded",
+    "underperform", "weak", "loss", "losses", "decline", "declines",
+    "declined", "bearish", "cuts", "cut", "lawsuit", "investigation",
+    "recall", "bankruptcy", "layoffs", "layoff", "warns", "warning",
+    "negative", "fraud", "probe", "sues", "sued", "slump", "slumps",
+    "tumble", "tumbles", "tumbled", "scandal", "delist", "delisted",
+}
+
+
+def extract_headline(item):
+    """Handles both the old (flat) and new (nested under "content") yfinance
+    news item shapes, since Yahoo's undocumented format has changed before."""
+    if not isinstance(item, dict):
+        return None, None
+    content = item.get("content")
+    if isinstance(content, dict):
+        title = content.get("title")
+        url = None
+        canonical = content.get("canonicalUrl")
+        if isinstance(canonical, dict):
+            url = canonical.get("url")
+        if not url:
+            click = content.get("clickThroughUrl")
+            if isinstance(click, dict):
+                url = click.get("url")
+        return title, url
+    return item.get("title"), item.get("link")
+
+
+def score_sentiment(headlines):
+    if not headlines:
+        return None, 0
+    net = 0
+    for h in headlines:
+        low = h.lower()
+        net += sum(1 for w in POSITIVE_WORDS if w in low)
+        net -= sum(1 for w in NEGATIVE_WORDS if w in low)
+    label = "Positive" if net > 0 else "Negative" if net < 0 else "Neutral"
+    return label, net
+
+
+def fetch_news(t):
+    """Best-effort — a news failure should never blank out the valuation
+    data for a symbol, so this always returns something usable."""
+    headlines, top_title, top_url = [], None, None
+    try:
+        items = t.news or []
+    except Exception:  # noqa: BLE001
+        items = []
+    for item in items[:5]:
+        title, url = extract_headline(item)
+        if title:
+            headlines.append(title)
+            if top_title is None:
+                top_title, top_url = title, url
+    label, score = score_sentiment(headlines)
+    return {
+        "newsSentiment": label,
+        "newsScore": score,
+        "newsCount": len(headlines),
+        "topHeadline": top_title,
+        "topHeadlineUrl": top_url,
+    }
+
 
 def load_existing():
     if SHARD_FILE.exists():
@@ -79,6 +158,7 @@ def fetch_one(symbol: str, name: str, exchange: str):
             row["price"] = price
             row.pop("currentPrice", None)
             row.pop("regularMarketPrice", None)
+            row.update(fetch_news(t))
             row["updated"] = datetime.now(timezone.utc).isoformat()
             return row
         except Exception as e:  # noqa: BLE001 - deliberately broad, this is a best-effort scraper

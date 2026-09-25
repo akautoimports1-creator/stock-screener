@@ -39,6 +39,7 @@ def main():
         "with_pe": sum(1 for r in rows if r.get("trailingPE")),
         "with_forward_pe": sum(1 for r in rows if r.get("forwardPE")),
         "with_peg": sum(1 for r in rows if r.get("pegRatio")),
+        "with_news": sum(1 for r in rows if r.get("newsCount")),
         "errors": sum(1 for r in rows if r.get("error")),
     }
     with open(DATA_DIR / "meta.json", "w") as f:

@@ -331,6 +331,30 @@
   .lc-ratio-val{ font-family: var(--mono); font-size: 22px; font-weight: 600; }
   .lc-empty{ font-size: 13px; color: var(--ink-soft); padding: 4px 0 0; }
 
+  .lc-cards2{ margin-top: 10px; }
+  .lc-range-val{ font-size: 15px; font-weight: 600; }
+  .lc-range-bar{
+    position: relative;
+    height: 6px;
+    background: var(--line);
+    border-radius: 4px;
+    margin-top: 10px;
+  }
+  .lc-range-fill{
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: var(--gold);
+    border-radius: 4px;
+  }
+  .lc-headline{
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .lc-headline a{ color: var(--ink); text-decoration: none; }
+  .lc-headline a:hover{ color: var(--gold); text-decoration: underline; }
+
   #lcVerdict{ cursor: pointer; }
   #lcVerdict::after{ content: " ▾"; font-size: 9px; opacity: 0.7; }
   #lcVerdict.open::after{ content: " ▴"; }
@@ -406,6 +430,22 @@
         </div>
       </div>
       <div class="lc-empty" id="lcEmpty" style="display:none;">No data available for this symbol yet.</div>
+      <div class="lc-cards lc-cards2">
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">52-Week Range</span></div>
+          <div class="lc-range-val" id="lc52w">—</div>
+          <div class="lc-range-bar"><div class="lc-range-fill" id="lcRangeFill" style="width:0%;"></div></div>
+        </div>
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">Analyst View</span></div>
+          <div class="lc-range-val"><span class="pill na" id="lcAnalystPill">—</span></div>
+        </div>
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">News</span></div>
+          <div class="lc-range-val"><span class="pill na" id="lcNewsPill">—</span></div>
+        </div>
+      </div>
+      <div class="lc-headline" id="lcHeadline" style="display:none;"></div>
     </div>
   </div>
 
@@ -467,11 +507,14 @@
           <th data-key="forwardPE" class="num">Fwd P/E</th>
           <th data-key="pegRatio" class="num">PEG</th>
           <th data-key="marketCap" class="num">Mkt Cap</th>
+          <th data-key="fiftyTwoWeekHigh" class="num">52W Range</th>
+          <th data-key="recommendationKey">Analyst</th>
+          <th data-key="newsScore">News</th>
           <th data-key="_score">Verdict</th>
         </tr>
       </thead>
       <tbody id="tableBody">
-        <tr><td colspan="9" class="loading-state">Loading stock data…</td></tr>
+        <tr><td colspan="12" class="loading-state">Loading stock data…</td></tr>
       </tbody>
     </table>
   </div>
@@ -557,6 +600,31 @@
   function fmtPrice(v){
     if (v === null || v === undefined || isNaN(v)) return '—';
     return '$' + Number(v).toFixed(2);
+  }
+  function fmtRange(lo, hi){
+    if (lo === null || lo === undefined || isNaN(lo) || hi === null || hi === undefined || isNaN(hi)) return '—';
+    return fmtPrice(lo) + ' – ' + fmtPrice(hi);
+  }
+
+  var ANALYST_MAP = {
+    strong_buy: { label: 'Bullish', cls: 'good' },
+    buy: { label: 'Bullish', cls: 'good' },
+    outperform: { label: 'Bullish', cls: 'good' },
+    hold: { label: 'Neutral', cls: 'warn' },
+    sell: { label: 'Bearish', cls: 'bad' },
+    strong_sell: { label: 'Bearish', cls: 'bad' },
+    underperform: { label: 'Bearish', cls: 'bad' }
+  };
+  function analystInfo(rec){
+    var key = (rec || '').toLowerCase();
+    return ANALYST_MAP[key] || { label: '—', cls: 'na' };
+  }
+
+  var NEWS_CLASS = { Positive: 'good', Neutral: 'warn', Negative: 'bad' };
+  function newsInfo(row){
+    var sentiment = row.newsSentiment;
+    if (sentiment && NEWS_CLASS[sentiment]) return { label: sentiment, cls: NEWS_CLASS[sentiment] };
+    return { label: row.newsCount ? 'Mixed' : 'No news', cls: 'na' };
   }
 
   function populateSectors(rows){
@@ -646,7 +714,7 @@
     els.nextPage.disabled = page >= totalPages;
 
     if (pageRows.length === 0){
-      els.tableBody.innerHTML = '<tr><td colspan="9" class="empty-state">No stocks match these filters.</td></tr>';
+      els.tableBody.innerHTML = '<tr><td colspan="12" class="empty-state">No stocks match these filters.</td></tr>';
       return;
     }
 
@@ -661,6 +729,9 @@
         '<td class="num">' + fmtNum(r.forwardPE) + '</td>' +
         '<td class="num">' + fmtNum(r.pegRatio) + '</td>' +
         '<td class="num">' + fmtCap(r.marketCap) + '</td>' +
+        '<td class="num">' + fmtRange(r.fiftyTwoWeekLow, r.fiftyTwoWeekHigh) + '</td>' +
+        '<td><span class="pill ' + analystInfo(r.recommendationKey).cls + '">' + analystInfo(r.recommendationKey).label + '</span></td>' +
+        '<td><span class="pill ' + newsInfo(r).cls + '">' + newsInfo(r).label + '</span></td>' +
         '<td><span class="pill ' + v.cls + '">' + v.label + (v.max ? ' ' + v.total + '/' + v.max : '') + '</span></td>' +
         '</tr>';
     }).join('');
@@ -759,6 +830,44 @@
 
     document.getElementById('lcEmpty').style.display = v.max === 0 ? 'block' : 'none';
     els.lookupCard.classList.add('show');
+    fillExtra(row);
+  }
+
+  function fillExtra(row){
+    var lo = row.fiftyTwoWeekLow, hi = row.fiftyTwoWeekHigh, price = row.price;
+    var rangeEl = document.getElementById('lc52w');
+    var fillEl = document.getElementById('lcRangeFill');
+    if (lo === null || lo === undefined || isNaN(lo) || hi === null || hi === undefined || isNaN(hi) || hi <= lo){
+      rangeEl.textContent = '—';
+      fillEl.style.width = '0%';
+    } else {
+      rangeEl.textContent = fmtRange(lo, hi);
+      var pct = (price === null || price === undefined || isNaN(price)) ? 0 : Math.max(0, Math.min(100, ((price - lo) / (hi - lo)) * 100));
+      fillEl.style.width = pct.toFixed(0) + '%';
+    }
+
+    var a = analystInfo(row.recommendationKey);
+    var aPill = document.getElementById('lcAnalystPill');
+    aPill.className = 'pill ' + a.cls;
+    aPill.textContent = a.label;
+
+    var n = newsInfo(row);
+    var nPill = document.getElementById('lcNewsPill');
+    nPill.className = 'pill ' + n.cls;
+    nPill.textContent = n.label + (row.newsCount ? ' (' + row.newsCount + ')' : '');
+
+    var headlineEl = document.getElementById('lcHeadline');
+    if (row.topHeadline){
+      headlineEl.style.display = 'block';
+      if (row.topHeadlineUrl){
+        headlineEl.innerHTML = '<a href="' + escapeHtml(row.topHeadlineUrl) + '" target="_blank" rel="noopener">' + escapeHtml(row.topHeadline) + '</a>';
+      } else {
+        headlineEl.textContent = row.topHeadline;
+      }
+    } else {
+      headlineEl.style.display = 'none';
+      headlineEl.textContent = '';
+    }
   }
 
   function fillBreakdownRow(prefix, val, thresholds){
@@ -896,7 +1005,7 @@
         applyFilters();
       })
       .catch(function(err){
-        els.tableBody.innerHTML = '<tr><td colspan="9" class="empty-state">Could not load stock data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
+        els.tableBody.innerHTML = '<tr><td colspan="12" class="empty-state">Could not load stock data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
       });
   }
 

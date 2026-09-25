@@ -32,6 +32,17 @@ at zero cost, but it means:
 - Smaller, newer, or foreign-listed companies often have missing forward
   P/E or PEG data — that's Yahoo's coverage gap, not a bug here.
 
+**News sentiment is a heuristic, not real analysis.** For each symbol the
+job pulls Yahoo's last few headlines and scores them by counting
+positive/negative words (`POSITIVE_WORDS`/`NEGATIVE_WORDS` in
+`fetch_data.py`) — no NLP, no paid sentiment API (none are free at
+full-market scale). Treat the Positive/Neutral/Negative tag as "which way
+recent headlines lean," not a verdict. This also roughly doubles the
+nightly job's API calls (one extra request per symbol for news) versus the
+valuation-only version, so it's slower and has more rate-limit exposure —
+if the job starts timing out or Yahoo starts blocking it, dropping the
+`fetch_news()` call in `fetch_data.py` is the first thing to try.
+
 If you outgrow this, swap `fetch_data.py`'s data source for a paid API
 (Financial Modeling Prep, Polygon.io, EOD Historical Data all have bulk
 fundamentals) — the rest of the site (scoring, filtering, UI) doesn't change.
@@ -89,11 +100,11 @@ the DNS instructions it gives you.
 
 - **Change refresh time:** edit the `cron` line in
   `.github/workflows/refresh-data.yml` (times are UTC).
-- **Add a filter criterion:** the data already includes `dividendYield`,
-  `targetMeanPrice`, and `recommendationKey` per symbol (see
-  `scripts/fetch_data.py`'s `FIELDS` list) that aren't wired into the UI
-  yet — add an input in `index.html`'s filter panel and a matching check in
-  `applyFilters()`.
+- **Add a filter criterion:** the data already includes `dividendYield` and
+  `targetMeanPrice` per symbol (see `scripts/fetch_data.py`'s `FIELDS` list)
+  that aren't wired into the UI yet — add an input in `index.html`'s filter
+  panel and a matching check in `applyFilters()`. (`recommendationKey` and
+  the 52-week range are already shown, in the table and the detail card.)
 - **Change the undervalued thresholds:** edit the `scoreOne` calls inside
   `computeVerdict()` in `index.html`.
 - **Narrow the universe:** pass a limit or add extra filtering logic in
