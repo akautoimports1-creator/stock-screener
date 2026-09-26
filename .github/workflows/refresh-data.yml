@@ -72,6 +72,10 @@ jobs:
           git push
 
   fetch-etfs:
+    # Waits for the stock job to fully finish instead of running in
+    # parallel with it — running both at once doubled the concurrent load
+    # on Yahoo and caused heavy rate-limiting on the ETF side specifically.
+    needs: merge
     runs-on: ubuntu-latest
     strategy:
       # ETFs are a much smaller universe than the full stock list, so 4

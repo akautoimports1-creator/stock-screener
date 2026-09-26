@@ -24,11 +24,16 @@ from universe import get_etf_universe
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 
-MAX_WORKERS = int(os.environ.get("MAX_WORKERS", "8"))
+# Lower default concurrency than the stock fetcher — fund "quote" lookups
+# on Yahoo seem to get rate-limited harder than plain equity lookups, and
+# this job used to run at the same time as the (heavier, 10-shard) stock
+# job, doubling the hammering. See RATE_LIMIT_SLEEP below and the workflow
+# (fetch-etfs now waits on `merge` so the two jobs don't overlap).
+MAX_WORKERS = int(os.environ.get("MAX_WORKERS", "4"))
 SHARD_INDEX = int(os.environ.get("SHARD_INDEX", "0"))
 SHARD_COUNT = int(os.environ.get("SHARD_COUNT", "1"))
 MAX_SYMBOLS = os.environ.get("MAX_SYMBOLS")
-RETRIES = 2
+RETRIES = 4
 
 SHARD_FILE = DATA_DIR / (f"etf-shard-{SHARD_INDEX}.json" if SHARD_COUNT > 1 else "etfs.json")
 
@@ -68,7 +73,13 @@ def fetch_one(symbol: str, name: str, exchange: str):
             return row
         except Exception as e:  # noqa: BLE001 - best-effort scraper, same as fetch_data.py
             last_err = e
-            time.sleep(1.5 + random.random() * 2)
+            # A 429 needs a real cooldown, not a quick retry — back off hard
+            # and get progressively slower each attempt. A different kind of
+            # failure (timeout, bad symbol, etc.) uses the old, shorter delay.
+            if "Too Many Requests" in str(e) or "Rate limited" in str(e):
+                time.sleep(6 * (attempt + 1) + random.random() * 5)
+            else:
+                time.sleep(1.5 + random.random() * 2)
     return {"symbol": symbol, "name": name, "exchange": exchange, "error": str(last_err)}
 
 
@@ -121,7 +132,30 @@ def main():
                 write_output(results)
 
     write_output(results)
-    print(f"Done. {done} processed, {failed} failed, {len(results)} total rows in file.", flush=True)
+    print(f"First pass done. {done} processed, {failed} failed.", flush=True)
+
+    # Second pass, serial and slow: most first-pass failures are Yahoo rate
+    # limits, not genuinely bad symbols, so it's worth cooling down and
+    # trying the failed ones again one at a time instead of leaving them
+    # blank for a full day until the next scheduled run.
+    retry_symbols = [s for s, r in results.items() if r.get("error")]
+    if retry_symbols:
+        print(f"Retrying {len(retry_symbols)} failed symbols after a cooldown...", flush=True)
+        time.sleep(20)
+        universe_by_symbol = {row["symbol"]: row for row in universe}
+        recovered = 0
+        for symbol in retry_symbols:
+            row_info = universe_by_symbol.get(symbol, {})
+            row = fetch_one(symbol, row_info.get("name"), row_info.get("exchange", ""))
+            results[symbol] = row
+            if not row.get("error"):
+                recovered += 1
+            time.sleep(0.5)
+        print(f"Retry pass recovered {recovered}/{len(retry_symbols)}.", flush=True)
+        write_output(results)
+
+    final_failed = sum(1 for r in results.values() if r.get("error"))
+    print(f"Done. {done} processed, {final_failed} still failing, {len(results)} total rows in file.", flush=True)
 
 
 def write_output(results: dict):
