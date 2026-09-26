@@ -42,6 +42,17 @@ SHARD_FILE = DATA_DIR / (f"etf-shard-{SHARD_INDEX}.json" if SHARD_COUNT > 1 else
 # first that's actually present.
 EXPENSE_RATIO_KEYS = ["annualReportExpenseRatio", "netExpenseRatio", "expenseRatio"]
 
+# Same idea for the 1-year price change: "52WeekChange" is the field this
+# was originally built against, but a first real run only populated it for
+# ~0.3% of ETFs (11 of 3332) — far below what a genuine Yahoo coverage gap
+# looks like on the stock side, so that's very likely the wrong/an
+# inconsistent key for funds specifically. Trying a few plausible
+# alternates here is free (same info dict, no extra request); the real
+# fix, if none of these help either, is switching to yfinance's
+# `Ticker.funds_data.fund_performance` (a separate, slower call per
+# symbol) for a properly-reported trailing return.
+YEAR_CHANGE_KEYS = ["52WeekChange", "fiftyTwoWeekChange", "ytdReturn"]
+
 
 def _first_present(info: dict, keys):
     for k in keys:
@@ -66,7 +77,7 @@ def fetch_one(symbol: str, name: str, exchange: str):
             row["totalAssets"] = info.get("totalAssets")
             row["fiftyTwoWeekLow"] = info.get("fiftyTwoWeekLow")
             row["fiftyTwoWeekHigh"] = info.get("fiftyTwoWeekHigh")
-            row["yearChange"] = info.get("52WeekChange")
+            row["yearChange"] = _first_present(info, YEAR_CHANGE_KEYS)
             row["distributionYield"] = info.get("yield")
             row["expenseRatio"] = _first_present(info, EXPENSE_RATIO_KEYS)
             row["updated"] = datetime.now(timezone.utc).isoformat()

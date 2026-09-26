@@ -1397,9 +1397,17 @@
     if (v === null || v === undefined || isNaN(v)) return '—';
     return (Number(v) * 100).toFixed(decimals === undefined ? 2 : decimals) + '%';
   }
+  // Yahoo's expenseRatio field comes back as a plain percent number already
+  // (0.35 means 0.35%, confirmed against real funds like JEPI/HYG/AGG) —
+  // NOT a fraction like distributionYield/yearChange are. Don't multiply by
+  // 100 for this one, or every value on the page is 100x too big.
+  function pctDirect(v, decimals){
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    return Number(v).toFixed(decimals === undefined ? 2 : decimals) + '%';
+  }
 
-  var EXP_GOOD = 0.001, EXP_FAIR = 0.005;   // 0.10% / 0.50%
-  var RET_GOOD = 0.15, RET_FAIR = 0;        // +15% / breakeven
+  var EXP_GOOD = 0.10, EXP_FAIR = 0.50;   // 0.10% / 0.50%, direct-percent scale (see pctDirect above)
+  var RET_GOOD = 0.15, RET_FAIR = 0;      // +15% / breakeven, fraction scale (see fmtPct above)
 
   function computeEtfVerdict(row){
     var sExp = scoreOne(row.expenseRatio, EXP_GOOD, EXP_FAIR);
@@ -1435,8 +1443,8 @@
       if (r.error) return false;
       if (q && !((r.symbol||'').toLowerCase().indexOf(q) > -1 || (r.name||'').toLowerCase().indexOf(q) > -1)) return false;
       if (category && r.category !== category) return false;
-      // expMax is entered as a percent (e.g. 0.5 for 0.50%); expenseRatio is stored as a fraction.
-      if (expMax !== null && !(r.expenseRatio !== null && r.expenseRatio !== undefined && r.expenseRatio <= expMax / 100)) return false;
+      // expenseRatio is already a direct percent number (see pctDirect above), same units the user types in.
+      if (expMax !== null && !(r.expenseRatio !== null && r.expenseRatio !== undefined && r.expenseRatio <= expMax)) return false;
       if (aumMin !== null && !(r.totalAssets >= aumMin * 1e6)) return false;
       if (yieldMin !== null && !(r.distributionYield !== null && r.distributionYield !== undefined && r.distributionYield * 100 >= yieldMin)) return false;
 
@@ -1506,7 +1514,7 @@
         '<td class="name-cell" title="' + escapeHtml(r.name || '') + '">' + escapeHtml(r.name || '—') + '</td>' +
         '<td>' + escapeHtml(r.category || '—') + '</td>' +
         '<td class="num">' + fmtPrice(r.price) + '</td>' +
-        '<td class="num">' + fmtPct(r.expenseRatio) + '</td>' +
+        '<td class="num">' + pctDirect(r.expenseRatio) + '</td>' +
         '<td class="num">' + fmtCap(r.totalAssets) + '</td>' +
         '<td class="num">' + fmtPct(r.distributionYield) + '</td>' +
         '<td class="num">' + fmtPct(r.yearChange) + '</td>' +
@@ -1622,20 +1630,20 @@
     var valEl = document.getElementById('etfLc' + prefix);
     mark.className = 'mark ' + (score === null ? 'na' : score === 2 ? 'good' : score === 1 ? 'warn' : 'bad');
     mark.textContent = score === null ? '–' : score === 2 ? '✓' : score === 1 ? '~' : '✕';
-    valEl.textContent = fmtPct(val);
+    valEl.textContent = lowerIsBetter ? pctDirect(val) : fmtPct(val);
   }
 
   function fillEtfBreakdownRow(prefix, val, lowerIsBetter){
     var el = document.getElementById('etfLcb' + prefix);
     var score = lowerIsBetter ? scoreOne(val, EXP_GOOD, EXP_FAIR) : scoreHigh(val, RET_GOOD, RET_FAIR);
-    var valText = (val === null || val === undefined || isNaN(val)) ? 'no data' : fmtPct(val);
+    var valText = (val === null || val === undefined || isNaN(val)) ? 'no data' : (lowerIsBetter ? pctDirect(val) : fmtPct(val));
     var scoreText;
     if (score === null){
       scoreText = 'not scored (missing data)';
     } else if (lowerIsBetter){
-      scoreText = score === 2 ? '2 pts — cheap (under ' + fmtPct(EXP_GOOD) + ')' :
-        score === 1 ? '1 pt — fair (under ' + fmtPct(EXP_FAIR) + ')' :
-        '0 pts — pricey (' + fmtPct(EXP_FAIR) + ' or higher)';
+      scoreText = score === 2 ? '2 pts — cheap (under ' + pctDirect(EXP_GOOD) + ')' :
+        score === 1 ? '1 pt — fair (under ' + pctDirect(EXP_FAIR) + ')' :
+        '0 pts — pricey (' + pctDirect(EXP_FAIR) + ' or higher)';
     } else {
       scoreText = score === 2 ? '2 pts — strong (' + fmtPct(RET_GOOD) + ' or better)' :
         score === 1 ? '1 pt — positive (0% or better)' :

@@ -38,6 +38,8 @@ def main():
         "total_symbols": len(rows),
         "with_expense_ratio": sum(1 for r in rows if r.get("expenseRatio") is not None),
         "with_aum": sum(1 for r in rows if r.get("totalAssets")),
+        "with_year_change": sum(1 for r in rows if r.get("yearChange") is not None),
+        "with_distribution_yield": sum(1 for r in rows if r.get("distributionYield") is not None),
         "errors": sum(1 for r in rows if r.get("error")),
     }
     with open(DATA_DIR / "etf_meta.json", "w") as f:
