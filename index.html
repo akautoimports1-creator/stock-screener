@@ -204,6 +204,23 @@
     cursor: pointer;
   }
   .wl-remove-btn:hover{ color: var(--bad, #c0392b); border-color: var(--bad, #c0392b); }
+
+  .wl-col{ width: 1%; white-space: nowrap; }
+  .wl-toggle-btn{
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-family: var(--sans);
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 4px 9px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .wl-toggle-btn:hover{ border-color: var(--gold); color: var(--gold); }
+  .wl-toggle-btn.in-watchlist{ border-color: var(--gold); color: var(--gold); background: var(--gold-soft); }
+  .lc-watch-row{ text-align: right; margin-top: 6px; }
   .wl-add-row{ display: flex; gap: 8px; align-items: flex-start; }
   .wl-add-row .lookup-inputwrap{ flex: 1; margin-bottom: 0; }
   .wl-add-btn{
@@ -636,6 +653,7 @@
         <div>
           <div class="lc-price" id="lcPrice">—</div>
           <div style="text-align:right; margin-top:4px;"><span class="pill" id="lcVerdict">—</span></div>
+          <div class="lc-watch-row"><button type="button" class="wl-toggle-btn" id="lcWatchBtn">+ Watch</button></div>
         </div>
       </div>
       <div class="lc-breakdown" id="lcBreakdown">
@@ -745,10 +763,11 @@
           <th data-key="recommendationKey">Analyst</th>
           <th data-key="newsScore">News</th>
           <th data-key="_score" class="sorted">Verdict</th>
+          <th class="wl-col"></th>
         </tr>
       </thead>
       <tbody id="tableBody">
-        <tr><td colspan="12" class="loading-state">Loading stock data…</td></tr>
+        <tr><td colspan="13" class="loading-state">Loading stock data…</td></tr>
       </tbody>
     </table>
   </div>
@@ -808,6 +827,7 @@
         <div>
           <div class="lc-price" id="etfLcPrice">—</div>
           <div style="text-align:right; margin-top:4px;"><span class="pill" id="etfLcVerdict">—</span></div>
+          <div class="lc-watch-row"><button type="button" class="wl-toggle-btn" id="etfLcWatchBtn">+ Watch</button></div>
         </div>
       </div>
       <div class="lc-breakdown" id="etfLcBreakdown">
@@ -899,10 +919,11 @@
           <th data-key="yearChange" class="num">1Y Change</th>
           <th data-key="fiftyTwoWeekHigh" class="num">52W Range</th>
           <th data-key="_score">Verdict</th>
+          <th class="wl-col"></th>
         </tr>
       </thead>
       <tbody id="etfTableBody">
-        <tr><td colspan="10" class="loading-state">Loading ETF data…</td></tr>
+        <tr><td colspan="11" class="loading-state">Loading ETF data…</td></tr>
       </tbody>
     </table>
   </div>
@@ -1149,7 +1170,7 @@
     els.nextPage.disabled = page >= totalPages;
 
     if (pageRows.length === 0){
-      els.tableBody.innerHTML = '<tr><td colspan="12" class="empty-state">No stocks match these filters.</td></tr>';
+      els.tableBody.innerHTML = '<tr><td colspan="13" class="empty-state">No stocks match these filters.</td></tr>';
       return;
     }
 
@@ -1168,6 +1189,7 @@
         '<td><span class="pill ' + analystInfo(r.recommendationKey).cls + '">' + analystInfo(r.recommendationKey).label + '</span></td>' +
         '<td><span class="pill table-news-pill ' + newsInfo(r).cls + '">' + newsInfo(r).label + (r.newsCount ? ' (' + r.newsCount + ')' : '') + '</span></td>' +
         '<td><span class="pill ' + v.cls + '">' + v.label + (v.max ? ' ' + v.total + '/' + v.max : '') + '</span></td>' +
+        '<td class="wl-col">' + wlToggleBtnHtml(r.symbol) + '</td>' +
         '</tr>';
     }).join('');
     els.tableBody.innerHTML = html;
@@ -1233,6 +1255,11 @@
 
   // --- Click a row to see its detail card ---
   els.tableBody.addEventListener('click', function(e){
+    var wlBtn = e.target.closest('[data-wl-toggle]');
+    if (wlBtn){
+      toggleWatchlistSymbol(wlBtn.getAttribute('data-wl-toggle'));
+      return;
+    }
     var tr = e.target.closest('tr[data-symbol]');
     if (!tr) return;
     var sym = tr.getAttribute('data-symbol');
@@ -1283,6 +1310,7 @@
     document.getElementById('lcEmpty').style.display = v.max === 0 ? 'block' : 'none';
     els.lookupCard.classList.add('show');
     fillExtra(row);
+    refreshWlButton('lcWatchBtn', row.symbol);
     lastStockChartRow = row;
     renderTVChart('tvChartStock', row);
   }
@@ -1504,7 +1532,7 @@
         renderWatchlist();
       })
       .catch(function(err){
-        els.tableBody.innerHTML = '<tr><td colspan="12" class="empty-state">Could not load stock data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
+        els.tableBody.innerHTML = '<tr><td colspan="13" class="empty-state">Could not load stock data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
       });
   }
 
@@ -1804,7 +1832,7 @@
     etfEls.nextPage.disabled = etfPage >= totalPages;
 
     if (pageRows.length === 0){
-      etfEls.tableBody.innerHTML = '<tr><td colspan="10" class="empty-state">No funds match these filters.</td></tr>';
+      etfEls.tableBody.innerHTML = '<tr><td colspan="11" class="empty-state">No funds match these filters.</td></tr>';
       return;
     }
 
@@ -1821,6 +1849,7 @@
         '<td class="num">' + fmtPct(r.yearChange) + '</td>' +
         '<td class="num">' + fmtRange(r.fiftyTwoWeekLow, r.fiftyTwoWeekHigh) + '</td>' +
         '<td><span class="pill ' + v.cls + '">' + v.label + (v.max ? ' ' + v.total + '/' + v.max : '') + '</span></td>' +
+        '<td class="wl-col">' + wlToggleBtnHtml(r.symbol) + '</td>' +
         '</tr>';
     }).join('');
     etfEls.tableBody.innerHTML = html;
@@ -1865,6 +1894,11 @@
   etfEls.nextPage.addEventListener('click', function(){ etfPage++; renderEtfs(); });
 
   etfEls.tableBody.addEventListener('click', function(e){
+    var wlBtn = e.target.closest('[data-wl-toggle]');
+    if (wlBtn){
+      toggleWatchlistSymbol(wlBtn.getAttribute('data-wl-toggle'));
+      return;
+    }
     var tr = e.target.closest('tr[data-symbol]');
     if (!tr) return;
     var sym = tr.getAttribute('data-symbol');
@@ -1923,6 +1957,7 @@
     }
 
     etfEls.lookupCard.classList.add('show');
+    refreshWlButton('etfLcWatchBtn', row.symbol);
     lastEtfChartRow = row;
     renderTVChart('tvChartEtf', row);
   }
@@ -2073,7 +2108,7 @@
         renderWatchlist();
       })
       .catch(function(err){
-        etfEls.tableBody.innerHTML = '<tr><td colspan="10" class="empty-state">Could not load ETF data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
+        etfEls.tableBody.innerHTML = '<tr><td colspan="11" class="empty-state">Could not load ETF data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
       });
   }
 
@@ -2225,6 +2260,44 @@
     return null;
   }
 
+  // Small "+ Watch" / "In watchlist" button used in the stock/ETF tables and
+  // the lookup cards. data-wl-toggle carries the symbol so one delegated
+  // click handler (per table) can add or remove it without re-looking-up
+  // which row/button was clicked.
+  function wlToggleBtnHtml(sym){
+    if (!sym) return '';
+    var inList = isInWatchlist(sym);
+    return '<button type="button" class="wl-toggle-btn' + (inList ? ' in-watchlist' : '') + '" data-wl-toggle="' + escapeHtml(sym) + '">' +
+      (inList ? '★ Watching' : '+ Watch') + '</button>';
+  }
+
+  // Updates one lookup-card watch button's label/style to match current
+  // watchlist state. Used both right after showing a card and whenever the
+  // watchlist changes some other way (e.g. toggled from a table row).
+  function refreshWlButton(btnId, sym){
+    var btn = document.getElementById(btnId);
+    if (!btn || !sym) return;
+    var inList = isInWatchlist(sym);
+    btn.classList.toggle('in-watchlist', inList);
+    btn.textContent = inList ? '★ Watching' : '+ Watch';
+    btn.setAttribute('data-wl-toggle', sym);
+  }
+
+  // Single entry point for every "+ Watch" / "Watching" button on the page
+  // (stock table, ETF table, both lookup cards) — adds or removes, then
+  // refreshes every place that button's state is shown.
+  function toggleWatchlistSymbol(sym){
+    if (!sym) return;
+    if (isInWatchlist(sym)) removeFromWatchlist(sym); else addToWatchlist(sym);
+  }
+
+  document.getElementById('lcWatchBtn').addEventListener('click', function(){
+    if (lastStockChartRow) toggleWatchlistSymbol(lastStockChartRow.symbol);
+  });
+  document.getElementById('etfLcWatchBtn').addEventListener('click', function(){
+    if (lastEtfChartRow) toggleWatchlistSymbol(lastEtfChartRow.symbol);
+  });
+
   function isInWatchlist(sym){
     var upper = sym.toUpperCase();
     return watchlistSymbols.indexOf(upper) > -1;
@@ -2235,7 +2308,7 @@
     if (watchlistSymbols.indexOf(upper) > -1) return false;
     watchlistSymbols.push(upper);
     saveWatchlistSymbols(watchlistSymbols);
-    renderWatchlist();
+    refreshAllWatchlistUI();
     return true;
   }
 
@@ -2243,7 +2316,19 @@
     var upper = sym.toUpperCase();
     watchlistSymbols = watchlistSymbols.filter(function(s){ return s !== upper; });
     saveWatchlistSymbols(watchlistSymbols);
+    refreshAllWatchlistUI();
+  }
+
+  // Every place a symbol's watchlist status shows up on the page: the
+  // Watchlist tab's own table, the Stocks/ETFs tables' "+ Watch" buttons,
+  // and whichever lookup card is currently open. Called any time the list
+  // changes, no matter which of those UIs triggered the change.
+  function refreshAllWatchlistUI(){
     renderWatchlist();
+    if (typeof render === 'function') render();
+    if (typeof renderEtfs === 'function') renderEtfs();
+    if (lastStockChartRow) refreshWlButton('lcWatchBtn', lastStockChartRow.symbol);
+    if (lastEtfChartRow) refreshWlButton('etfLcWatchBtn', lastEtfChartRow.symbol);
   }
 
   function renderWatchlist(){
