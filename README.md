@@ -111,3 +111,24 @@ the DNS instructions it gives you.
   `scripts/universe.py`'s `get_universe()` — e.g. drop OTC-adjacent tickers,
   restrict to a market-cap floor, or hardcode the S&P 500 list instead of
   the full exchange listing.
+
+## ETF section
+
+There's a second tab on the site ("ETFs") that's a separate pipeline from
+the stock screener, since ETFs don't have a P/E to score:
+
+- `scripts/universe.py`'s `get_etf_universe()` pulls ETF tickers the same
+  way `get_universe()` pulls stocks, just keeping rows the symbol
+  directories flag as `ETF: Y` instead of dropping them.
+- `scripts/fetch_etf_data.py` looks up expense ratio, AUM, distribution
+  yield, and 1-year price change per fund (sharded the same way as the
+  stock job, just fewer shards since there are far fewer ETFs than stocks).
+- `scripts/merge_etfs.py` combines the shards into `data/etfs.json` and
+  `data/etf_meta.json`, same idea as `merge.py`.
+- The "Best value / Fair / Costly" verdict on that tab scores each fund on
+  expense ratio (cheap is good) and 1-year return (higher is good) —
+  see `computeEtfVerdict()` in `index.html`. It's a cost/performance score,
+  not investment advice.
+- Both refresh jobs (`fetch`/`merge` for stocks, `fetch-etfs`/`merge-etfs`
+  for ETFs) run nightly off the same workflow and push to the repo
+  independently, so one can succeed even if the other fails.
