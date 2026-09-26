@@ -1,7 +1,9 @@
 {
-  "last_updated": "2026-09-26T03:56:56.156488+00:00",
+  "last_updated": "2026-09-26T14:10:46.012126+00:00",
   "total_symbols": 5736,
-  "with_expense_ratio": 3065,
-  "with_aum": 3047,
-  "errors": 2404
+  "with_expense_ratio": 5088,
+  "with_aum": 5050,
+  "with_year_change": 4348,
+  "with_distribution_yield": 4037,
+  "errors": 0
 }
