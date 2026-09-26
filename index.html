@@ -183,6 +183,45 @@
     padding: 0;
   }
 
+  .wl-type-pill{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+  .wl-remove-btn{
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-family: var(--sans);
+    font-size: 12px;
+    border-radius: 6px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .wl-remove-btn:hover{ color: var(--bad, #c0392b); border-color: var(--bad, #c0392b); }
+  .wl-add-row{ display: flex; gap: 8px; align-items: flex-start; }
+  .wl-add-row .lookup-inputwrap{ flex: 1; margin-bottom: 0; }
+  .wl-add-btn{
+    background: var(--gold);
+    border: none;
+    color: var(--paper, #fff);
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: 8px;
+    padding: 0 18px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .wl-add-btn:disabled{ opacity: 0.5; cursor: default; }
+  .wl-msg{ font-size: 12px; color: var(--ink-soft); margin-top: 8px; min-height: 16px; }
+  .wl-msg.err{ color: var(--bad, #c0392b); }
+
   .resultbar{
     display: flex;
     justify-content: space-between;
@@ -577,6 +616,7 @@
   <div class="tabs">
     <button class="tab-btn active" id="tabStocks" type="button" data-view="stocks">Stocks</button>
     <button class="tab-btn" id="tabEtfs" type="button" data-view="etfs">ETFs</button>
+    <button class="tab-btn" id="tabWatchlist" type="button" data-view="watchlist">Watchlist</button>
   </div>
 
   <div class="view-panel active" id="stocksView">
@@ -871,6 +911,43 @@
     <button id="etfPrevPage" type="button">← Prev</button>
     <span id="etfPageLabel">Page 1</span>
     <button id="etfNextPage" type="button">Next →</button>
+  </div>
+  </div>
+
+  <div class="view-panel" id="watchlistView">
+  <div class="panel lookup" id="watchlistAddPanel">
+    <div class="lookup-label">Add a stock or ETF to your watchlist</div>
+    <div class="wl-add-row">
+      <div class="lookup-inputwrap">
+        <input type="text" id="wlInput" placeholder="Type a ticker — AAPL, SPY, TSLA…" autocomplete="off" spellcheck="false">
+        <div class="suggest" id="wlSuggest"></div>
+      </div>
+      <button class="wl-add-btn" id="wlAddBtn" type="button">Add</button>
+    </div>
+    <div class="wl-msg" id="wlMsg"></div>
+  </div>
+
+  <div class="resultbar">
+    <span id="wlResultCount">0 symbols</span>
+    <span>Click a row to see full details · saved in this browser only</span>
+  </div>
+
+  <div class="tablewrap">
+    <table id="wlTable">
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Name</th>
+          <th>Type</th>
+          <th class="num">Price</th>
+          <th>Verdict</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="wlTableBody">
+        <tr><td colspan="6" class="empty-state">Your watchlist is empty — add a ticker above.</td></tr>
+      </tbody>
+    </table>
   </div>
   </div>
 
@@ -1424,6 +1501,7 @@
         allRows = rows;
         populateSectors(rows);
         applyFilters();
+        renderWatchlist();
       })
       .catch(function(err){
         els.tableBody.innerHTML = '<tr><td colspan="12" class="empty-state">Could not load stock data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
@@ -1522,21 +1600,29 @@
   }
   applyStoredTheme();
 
-  // --- Tabs: switch between the Stocks view and the ETFs view ---
-  var tabButtons = { stocks: document.getElementById('tabStocks'), etfs: document.getElementById('tabEtfs') };
-  var viewPanels = { stocks: document.getElementById('stocksView'), etfs: document.getElementById('etfsView') };
+  // --- Tabs: switch between the Stocks view, the ETFs view, and the Watchlist view ---
+  var tabButtons = { stocks: document.getElementById('tabStocks'), etfs: document.getElementById('tabEtfs'), watchlist: document.getElementById('tabWatchlist') };
+  var viewPanels = { stocks: document.getElementById('stocksView'), etfs: document.getElementById('etfsView'), watchlist: document.getElementById('watchlistView') };
   var etfLoaded = false;
+  function ensureEtfDataLoading(){
+    if (etfLoaded) return;
+    etfLoaded = true;
+    loadEtfMeta();
+    loadEtfs();
+    loadFed();
+  }
   Object.keys(tabButtons).forEach(function(key){
     tabButtons[key].addEventListener('click', function(){
       Object.keys(tabButtons).forEach(function(k){
         tabButtons[k].classList.toggle('active', k === key);
         viewPanels[k].classList.toggle('active', k === key);
       });
-      if (key === 'etfs' && !etfLoaded){
-        etfLoaded = true;
-        loadEtfMeta();
-        loadEtfs();
-        loadFed();
+      if (key === 'etfs') ensureEtfDataLoading();
+      if (key === 'watchlist'){
+        // The watchlist can hold ETFs too, so it needs that dataset even if
+        // the person never clicks the ETFs tab themselves.
+        ensureEtfDataLoading();
+        renderWatchlist();
       }
     });
   });
@@ -1555,7 +1641,7 @@
   var etfSortKey = '_sizeValue';
   var etfSortDir = -1;
 
-  // Size tiers for the default sort -- bucket first, so a handful of huge
+  // Size tiers for the default sort — bucket first, so a handful of huge
   // funds don't get interleaved with small ones just because their exact
   // AUM numbers happen to be close.
   function etfSizeTier(totalAssets){
@@ -1984,6 +2070,7 @@
         etfAllRows = rows;
         populateEtfCategories(rows);
         applyEtfFilters();
+        renderWatchlist();
       })
       .catch(function(err){
         etfEls.tableBody.innerHTML = '<tr><td colspan="10" class="empty-state">Could not load ETF data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
@@ -2099,6 +2186,243 @@
       }
     }
   }
+
+  // ============================================================
+  // Watchlist — a personal list of symbols (stocks and/or ETFs) saved to
+  // this browser's localStorage. There's no backend and no accounts, so
+  // this list lives only on this device/browser, same idea as bookmarks.
+  // Prices/verdicts are looked up live from whichever of allRows/etfAllRows
+  // already has that symbol, so it always reflects the latest nightly data.
+  // ============================================================
+  var WATCHLIST_KEY = 're-watchlist';
+
+  function loadWatchlistSymbols(){
+    try {
+      var raw = localStorage.getItem(WATCHLIST_KEY);
+      var parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e){
+      return [];
+    }
+  }
+
+  function saveWatchlistSymbols(list){
+    try { localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list)); } catch (e){ /* private mode etc. — list still works this session */ }
+  }
+
+  var watchlistSymbols = loadWatchlistSymbols();
+
+  // Finds a symbol in whichever dataset has it. Returns null if neither
+  // dataset (yet) contains it — could mean "not a real symbol" or just
+  // "that dataset hasn't finished loading yet"; renderWatchlist tells those
+  // apart using whether allRows/etfAllRows are populated at all.
+  function findWatchlistRow(sym){
+    var upper = sym.toUpperCase();
+    var stockRow = allRows.find(function(r){ return r.symbol && r.symbol.toUpperCase() === upper; });
+    if (stockRow) return { row: stockRow, type: 'Stock' };
+    var etfRow = etfAllRows.find(function(r){ return r.symbol && r.symbol.toUpperCase() === upper; });
+    if (etfRow) return { row: etfRow, type: 'ETF' };
+    return null;
+  }
+
+  function isInWatchlist(sym){
+    var upper = sym.toUpperCase();
+    return watchlistSymbols.indexOf(upper) > -1;
+  }
+
+  function addToWatchlist(sym){
+    var upper = sym.toUpperCase();
+    if (watchlistSymbols.indexOf(upper) > -1) return false;
+    watchlistSymbols.push(upper);
+    saveWatchlistSymbols(watchlistSymbols);
+    renderWatchlist();
+    return true;
+  }
+
+  function removeFromWatchlist(sym){
+    var upper = sym.toUpperCase();
+    watchlistSymbols = watchlistSymbols.filter(function(s){ return s !== upper; });
+    saveWatchlistSymbols(watchlistSymbols);
+    renderWatchlist();
+  }
+
+  function renderWatchlist(){
+    var tbody = document.getElementById('wlTableBody');
+    var countEl = document.getElementById('wlResultCount');
+    if (!tbody) return;
+    countEl.textContent = watchlistSymbols.length + ' symbol' + (watchlistSymbols.length === 1 ? '' : 's');
+
+    if (watchlistSymbols.length === 0){
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Your watchlist is empty — add a ticker above.</td></tr>';
+      return;
+    }
+
+    var datasetsReady = allRows.length > 0 || etfAllRows.length > 0;
+
+    tbody.innerHTML = watchlistSymbols.map(function(sym){
+      var found = findWatchlistRow(sym);
+      if (!found){
+        var status = datasetsReady ? 'Not found in latest data' : 'Loading…';
+        return '<tr data-wl-symbol="' + escapeHtml(sym) + '">' +
+          '<td class="sym">' + escapeHtml(sym) + '</td>' +
+          '<td class="name-cell">' + status + '</td>' +
+          '<td>—</td><td class="num">—</td><td>—</td>' +
+          '<td><button type="button" class="wl-remove-btn" data-wl-remove="' + escapeHtml(sym) + '">Remove</button></td>' +
+          '</tr>';
+      }
+      var row = found.row;
+      var verdict = found.type === 'Stock' ? computeVerdict(row) : computeEtfVerdict(row);
+      return '<tr data-wl-symbol="' + escapeHtml(sym) + '">' +
+        '<td class="sym">' + escapeHtml(row.symbol) + '</td>' +
+        '<td class="name-cell" title="' + escapeHtml(row.name || '') + '">' + escapeHtml(row.name || '—') + '</td>' +
+        '<td><span class="wl-type-pill">' + found.type + '</span></td>' +
+        '<td class="num">' + fmtPrice(row.price) + '</td>' +
+        '<td><span class="pill ' + verdict.cls + '">' + verdict.label + (verdict.max ? ' ' + verdict.total + '/' + verdict.max : '') + '</span></td>' +
+        '<td><button type="button" class="wl-remove-btn" data-wl-remove="' + escapeHtml(sym) + '">Remove</button></td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  document.getElementById('wlTableBody').addEventListener('click', function(e){
+    var removeBtn = e.target.closest('[data-wl-remove]');
+    if (removeBtn){
+      removeFromWatchlist(removeBtn.getAttribute('data-wl-remove'));
+      return;
+    }
+    var tr = e.target.closest('tr[data-wl-symbol]');
+    if (!tr) return;
+    var sym = tr.getAttribute('data-wl-symbol');
+    var found = findWatchlistRow(sym);
+    if (!found) return;
+    if (found.type === 'Stock'){
+      tabButtons.stocks.click();
+      selectSymbol(found.row);
+    } else {
+      tabButtons.etfs.click();
+      selectEtfSymbol(found.row);
+    }
+  });
+
+  // --- Add box: typeahead across both stocks and ETFs ---
+  var wlInput = document.getElementById('wlInput');
+  var wlSuggestEl = document.getElementById('wlSuggest');
+  var wlAddBtn = document.getElementById('wlAddBtn');
+  var wlMsgEl = document.getElementById('wlMsg');
+  var wlMatches = [];
+  var wlActiveIndex = -1;
+
+  function wlSuggestions(q){
+    q = q.trim().toUpperCase();
+    if (!q) return [];
+    var starts = [], contains = [];
+    var combined = allRows.map(function(r){ return { row: r, type: 'Stock' }; })
+      .concat(etfAllRows.map(function(r){ return { row: r, type: 'ETF' }; }));
+    for (var i = 0; i < combined.length; i++){
+      var r = combined[i].row;
+      if (!r.symbol) continue;
+      var sym = r.symbol.toUpperCase();
+      var name = (r.name || '').toUpperCase();
+      if (sym.indexOf(q) === 0){ starts.push(combined[i]); }
+      else if (sym.indexOf(q) > -1 || name.indexOf(q) > -1){ contains.push(combined[i]); }
+      if (starts.length >= 8) break;
+    }
+    return starts.concat(contains).slice(0, 8);
+  }
+
+  function wlRenderSuggestions(matches){
+    wlMatches = matches;
+    wlActiveIndex = -1;
+    if (matches.length === 0){
+      wlSuggestEl.classList.remove('show');
+      wlSuggestEl.innerHTML = '';
+      return;
+    }
+    wlSuggestEl.innerHTML = matches.map(function(m, i){
+      return '<div class="suggest-item" data-idx="' + i + '">' +
+        '<span class="s-sym">' + escapeHtml(m.row.symbol) + '</span>' +
+        '<span class="s-name">' + escapeHtml(m.row.name || '') + ' · ' + m.type + '</span>' +
+        '</div>';
+    }).join('');
+    wlSuggestEl.classList.add('show');
+    Array.prototype.forEach.call(wlSuggestEl.querySelectorAll('.suggest-item'), function(el){
+      el.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        var idx = parseInt(el.getAttribute('data-idx'), 10);
+        wlAddFromMatch(wlMatches[idx]);
+      });
+    });
+  }
+
+  function wlHighlightActive(){
+    Array.prototype.forEach.call(wlSuggestEl.querySelectorAll('.suggest-item'), function(el, i){
+      el.classList.toggle('active', i === wlActiveIndex);
+    });
+  }
+
+  function wlShowMsg(text, isErr){
+    wlMsgEl.textContent = text || '';
+    wlMsgEl.classList.toggle('err', !!isErr);
+  }
+
+  function wlAddFromMatch(match){
+    if (!match) return;
+    wlInput.value = '';
+    wlSuggestEl.classList.remove('show');
+    var added = addToWatchlist(match.row.symbol);
+    wlShowMsg(added ? ('Added ' + match.row.symbol + ' to your watchlist.') : (match.row.symbol + ' is already on your watchlist.'), false);
+  }
+
+  function wlAddFromInput(){
+    var q = wlInput.value.trim();
+    if (!q){ wlShowMsg('Type a ticker first.', true); return; }
+    var found = findWatchlistRow(q);
+    if (!found){
+      wlShowMsg('"' + q + '" isn\'t in the stock or ETF data — check the spelling, or it may not be covered yet.', true);
+      return;
+    }
+    wlInput.value = '';
+    wlSuggestEl.classList.remove('show');
+    var added = addToWatchlist(found.row.symbol);
+    wlShowMsg(added ? ('Added ' + found.row.symbol + ' to your watchlist.') : (found.row.symbol + ' is already on your watchlist.'), false);
+  }
+
+  wlInput.addEventListener('input', debounce(function(){
+    wlShowMsg('', false);
+    wlRenderSuggestions(wlSuggestions(wlInput.value));
+  }, 120));
+
+  wlInput.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowDown'){
+      e.preventDefault();
+      if (wlMatches.length === 0) return;
+      wlActiveIndex = Math.min(wlActiveIndex + 1, wlMatches.length - 1);
+      wlHighlightActive();
+    } else if (e.key === 'ArrowUp'){
+      e.preventDefault();
+      if (wlMatches.length === 0) return;
+      wlActiveIndex = Math.max(wlActiveIndex - 1, 0);
+      wlHighlightActive();
+    } else if (e.key === 'Enter'){
+      e.preventDefault();
+      if (wlActiveIndex > -1 && wlMatches[wlActiveIndex]){
+        wlAddFromMatch(wlMatches[wlActiveIndex]);
+      } else {
+        wlAddFromInput();
+      }
+    } else if (e.key === 'Escape'){
+      wlSuggestEl.classList.remove('show');
+    }
+  });
+
+  wlAddBtn.addEventListener('click', wlAddFromInput);
+
+  document.addEventListener('click', function(e){
+    if (!wlSuggestEl.contains(e.target) && e.target !== wlInput){
+      wlSuggestEl.classList.remove('show');
+    }
+  });
+
+  renderWatchlist();
 
   loadMeta();
   loadStocks();
