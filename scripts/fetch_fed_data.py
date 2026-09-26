@@ -135,35 +135,41 @@ def compute_rate_snapshot():
         "currentRange": {"lower": current_lower, "upper": current_upper},
         "asOfDate": upper[-1][0],
         "lastChange": last_change,
-        "lastMeeting": last_meeting_action(upper, datetime.now(timezone.utc).date()),
+        "lastMeeting": last_meeting_action(datetime.now(timezone.utc).date(), last_change),
     }
 
 
-def last_meeting_action(upper_series, today: date):
+def last_meeting_action(today: date, last_change):
     """What actually happened at the most recent PAST scheduled FOMC meeting
     — distinct from last_change above, which is the last time the rate
     moved at all (could be several meetings ago if the Fed has been
     holding). This answers "what did they do last meeting", including the
-    "held steady" case last_change alone can't express."""
+    "held steady" case last_change alone can't express.
+
+    Deliberately reuses last_change rather than re-comparing the series
+    against the meeting date directly: FRED's DFEDTARU/DFEDTARL don't
+    update ON the meeting's decision day — the new rate takes effect the
+    next business day (the decision is announced in the afternoon of the
+    meeting's last day). Comparing "on or after meeting_date" grabs that
+    still-stale same-day value and wrongly reports a real hike/cut as
+    "held" (caught by a unit test with synthetic data before this ever
+    shipped). Instead: if the last real change happened within a few days
+    after the most recent meeting, that change *is* this meeting's action;
+    otherwise the Fed held at that meeting."""
     past_meetings = [d for d in FOMC_MEETINGS if datetime.strptime(d, "%Y-%m-%d").date() <= today]
     if not past_meetings:
         return None
     meeting_date = past_meetings[-1]
+    meeting_dt = datetime.strptime(meeting_date, "%Y-%m-%d").date()
 
-    before_val = None
-    after_val = None
-    for d, v in upper_series:
-        if d < meeting_date:
-            before_val = v
-        if d >= meeting_date and after_val is None:
-            after_val = v
+    if last_change:
+        change_dt = datetime.strptime(last_change["date"], "%Y-%m-%d").date()
+        # Effective date is normally the next business day; allow a few
+        # days of slack for weekends/holidays around the meeting.
+        if 0 <= (change_dt - meeting_dt).days <= 5:
+            return {"date": meeting_date, "action": last_change["direction"], "bps": last_change["bps"]}
 
-    if before_val is None or after_val is None:
-        return {"date": meeting_date, "action": "unknown", "bps": None}
-
-    bps = round((after_val - before_val) * 100)
-    action = "raised" if bps > 0 else "cut" if bps < 0 else "held"
-    return {"date": meeting_date, "action": action, "bps": abs(bps)}
+    return {"date": meeting_date, "action": "held", "bps": 0}
 
 
 def next_meeting(today: date):
