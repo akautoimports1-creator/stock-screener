@@ -474,6 +474,26 @@
   .lc-empty{ font-size: 13px; color: var(--ink-soft); padding: 4px 0 0; }
 
   .lc-cards2{ margin-top: 10px; }
+
+  .chart-panel{ margin-top: 14px; }
+  .chart-panel-label{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .chart-note{ text-transform: none; letter-spacing: normal; font-size: 11px; color: var(--ink-soft); }
+  .tv-embed{
+    min-height: 420px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .tv-embed .tradingview-widget-container,
+  .tv-embed .tradingview-widget-container__widget{ height: 100%; }
+  @media (max-width: 560px){ .tv-embed{ min-height: 320px; } }
   .lc-range-val{ font-size: 15px; font-weight: 600; }
   .lc-range-bar{
     position: relative;
@@ -616,6 +636,10 @@
       </div>
       <div class="lc-headline" id="lcHeadline" style="display:none;"></div>
       <div class="lc-news-breakdown" id="lcNewsBreakdown"></div>
+      <div class="chart-panel">
+        <div class="chart-panel-label">Price Chart <span class="chart-note">via TradingView</span></div>
+        <div class="tv-embed" id="tvChartStock"></div>
+      </div>
     </div>
   </div>
 
@@ -780,6 +804,10 @@
           <div class="lc-ratio-top"><span class="lc-ratio-label">Distribution Yield</span></div>
           <div class="lc-range-val" id="etfLcYield">—</div>
         </div>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-panel-label">Price Chart <span class="chart-note">via TradingView</span></div>
+        <div class="tv-embed" id="tvChartEtf"></div>
       </div>
     </div>
   </div>
@@ -1178,6 +1206,8 @@
     document.getElementById('lcEmpty').style.display = v.max === 0 ? 'block' : 'none';
     els.lookupCard.classList.add('show');
     fillExtra(row);
+    lastStockChartRow = row;
+    renderTVChart('tvChartStock', row);
   }
 
   function fillExtra(row){
@@ -1424,7 +1454,72 @@
     document.documentElement.setAttribute('data-theme', next);
     try { localStorage.setItem('re-theme', next); } catch (e){}
     updateToggleIcon();
+    if (lastStockChartRow) renderTVChart('tvChartStock', lastStockChartRow);
+    if (lastEtfChartRow) renderTVChart('tvChartEtf', lastEtfChartRow);
   });
+
+  // --- TradingView chart embed (both lookup cards) ---
+  // Free public embed widget, no account/API key needed. We only pass it a
+  // symbol; TradingView fetches and renders the actual historical price
+  // data client-side, so this needs zero changes to the nightly data
+  // pipeline and works for every symbol TradingView covers (which is
+  // effectively the whole US market).
+  var TV_EXCHANGE_MAP = {
+    'NASDAQ': 'NASDAQ',
+    'NYSE': 'NYSE',
+    'NYSE American': 'AMEX',
+    'NYSE Arca': 'AMEX',
+    'Cboe BZX': 'BATS',
+  };
+  var lastStockChartRow = null;
+  var lastEtfChartRow = null;
+
+  function tvSymbolFor(row){
+    if (!row || !row.symbol) return null;
+    var prefix = TV_EXCHANGE_MAP[row.exchange];
+    // Unmapped/unusual exchanges (rare — mostly thin OTC-adjacent listings)
+    // fall back to the bare symbol; TradingView's own resolver picks the
+    // most likely US listing rather than showing nothing.
+    return prefix ? (prefix + ':' + row.symbol) : row.symbol;
+  }
+
+  function renderTVChart(containerId, row){
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    var symbol = tvSymbolFor(row);
+    if (!symbol) return;
+
+    // A <script> tag written via innerHTML never executes (browsers block
+    // it), so the widget's own script element has to be built and appended
+    // manually — this is the standard pattern for embedding TradingView's
+    // widget in a page that swaps symbols dynamically instead of loading
+    // it once at page load.
+    var wrap = document.createElement('div');
+    wrap.className = 'tradingview-widget-container';
+    var widgetDiv = document.createElement('div');
+    widgetDiv.className = 'tradingview-widget-container__widget';
+    wrap.appendChild(widgetDiv);
+
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+    script.async = true;
+    script.textContent = JSON.stringify({
+      autosize: true,
+      symbol: symbol,
+      interval: 'D',
+      timezone: 'Etc/UTC',
+      theme: isDarkActive() ? 'dark' : 'light',
+      style: '1',
+      locale: 'en',
+      allow_symbol_change: true,
+      calendar: false,
+      support_host: 'https://www.tradingview.com'
+    });
+    wrap.appendChild(script);
+    container.appendChild(wrap);
+  }
   applyStoredTheme();
 
   // --- Tabs: switch between the Stocks view and the ETFs view ---
@@ -1716,6 +1811,8 @@
     }
 
     etfEls.lookupCard.classList.add('show');
+    lastEtfChartRow = row;
+    renderTVChart('tvChartEtf', row);
   }
 
   function fillEtfRatio(prefix, val, lowerIsBetter){
