@@ -45,13 +45,26 @@ EXPENSE_RATIO_KEYS = ["annualReportExpenseRatio", "netExpenseRatio", "expenseRat
 # Same idea for the 1-year price change: "52WeekChange" is the field this
 # was originally built against, but a first real run only populated it for
 # ~0.3% of ETFs (11 of 3332) — far below what a genuine Yahoo coverage gap
-# looks like on the stock side, so that's very likely the wrong/an
-# inconsistent key for funds specifically. Trying a few plausible
-# alternates here is free (same info dict, no extra request); the real
-# fix, if none of these help either, is switching to yfinance's
-# `Ticker.funds_data.fund_performance` (a separate, slower call per
-# symbol) for a properly-reported trailing return.
+# looks like on the stock side, so the fallback keys below were added to
+# widen coverage.
+#
+# IMPORTANT UNIT MISMATCH (found while auditing the 2026-09-26 run): unlike
+# "52WeekChange" (a genuine fraction, e.g. 0.13 = +13%, confirmed earlier),
+# the fallback keys "fiftyTwoWeekChange" and "ytdReturn" come back as a
+# DIRECT PERCENT number (e.g. 13.07 meaning +13.07%, NOT +1307%). Confirmed
+# by cross-checking the implied price-a-year-ago against each fund's own
+# fiftyTwoWeekLow/High: reading the fallback value as a fraction puts the
+# year-ago price impossibly far outside the fund's own 52-week range for
+# every fund checked (SPY, AGG, GLD, BND, ARKK, JEPI, HYG, TLT); reading it
+# as a direct percent lands neatly inside that range every time. So the two
+# fallback keys must be divided by 100 to match "52WeekChange"'s fraction
+# scale (the same scale distributionYield and the front end's fmtPct()/
+# RET_GOOD-RET_FAIR thresholds already assume) — otherwise every fund with
+# a positive return trivially "passes" the 0.15 threshold and the verdict
+# score is meaningless. If Yahoo's fields shift again, re-verify with this
+# same 52-week-range cross-check before trusting a new key's scale.
 YEAR_CHANGE_KEYS = ["52WeekChange", "fiftyTwoWeekChange", "ytdReturn"]
+YEAR_CHANGE_FRACTION_KEYS = {"52WeekChange"}  # already a fraction; others need /100
 
 
 def _first_present(info: dict, keys):
@@ -59,6 +72,15 @@ def _first_present(info: dict, keys):
         v = info.get(k)
         if v is not None:
             return v
+    return None
+
+
+def _year_change(info: dict):
+    for k in YEAR_CHANGE_KEYS:
+        v = info.get(k)
+        if v is None:
+            continue
+        return v if k in YEAR_CHANGE_FRACTION_KEYS else v / 100.0
     return None
 
 
@@ -77,7 +99,7 @@ def fetch_one(symbol: str, name: str, exchange: str):
             row["totalAssets"] = info.get("totalAssets")
             row["fiftyTwoWeekLow"] = info.get("fiftyTwoWeekLow")
             row["fiftyTwoWeekHigh"] = info.get("fiftyTwoWeekHigh")
-            row["yearChange"] = _first_present(info, YEAR_CHANGE_KEYS)
+            row["yearChange"] = _year_change(info)
             row["distributionYield"] = info.get("yield")
             row["expenseRatio"] = _first_present(info, EXPENSE_RATIO_KEYS)
             row["updated"] = datetime.now(timezone.utc).isoformat()
