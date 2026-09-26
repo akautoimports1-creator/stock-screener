@@ -32,7 +32,7 @@ def _fetch(url: str, timeout: int = 30) -> str:
     return resp.text
 
 
-def _parse_nasdaq(text: str):
+def _parse_nasdaq(text: str, want_etf: bool):
     reader = csv.DictReader(io.StringIO(text), delimiter="|")
     out = []
     for row in reader:
@@ -42,7 +42,8 @@ def _parse_nasdaq(text: str):
             continue
         if row.get("Test Issue") == "Y":
             continue
-        if row.get("ETF") == "Y":
+        is_etf = row.get("ETF") == "Y"
+        if is_etf != want_etf:
             continue
         if JUNK_SUFFIX_RE.search(symbol):
             continue
@@ -50,7 +51,7 @@ def _parse_nasdaq(text: str):
     return out
 
 
-def _parse_other(text: str):
+def _parse_other(text: str, want_etf: bool):
     reader = csv.DictReader(io.StringIO(text), delimiter="|")
     out = []
     for row in reader:
@@ -60,7 +61,8 @@ def _parse_other(text: str):
             continue
         if row.get("Test Issue") == "Y":
             continue
-        if row.get("ETF") == "Y":
+        is_etf = row.get("ETF") == "Y"
+        if is_etf != want_etf:
             continue
         if JUNK_SUFFIX_RE.search(symbol):
             continue
@@ -70,12 +72,11 @@ def _parse_other(text: str):
     return out
 
 
-def get_universe(limit: int | None = None):
-    """Returns a de-duplicated list of {symbol, name, exchange} dicts."""
+def _build_universe(want_etf: bool, limit: int | None):
     nasdaq_text = _fetch(NASDAQ_URL)
     other_text = _fetch(OTHER_URL)
 
-    rows = _parse_nasdaq(nasdaq_text) + _parse_other(other_text)
+    rows = _parse_nasdaq(nasdaq_text, want_etf) + _parse_other(other_text, want_etf)
 
     seen = set()
     deduped = []
@@ -93,9 +94,24 @@ def get_universe(limit: int | None = None):
     return deduped
 
 
+def get_universe(limit: int | None = None):
+    """Returns a de-duplicated list of {symbol, name, exchange} dicts for
+    plain common stock (ETFs excluded — see get_etf_universe)."""
+    return _build_universe(want_etf=False, limit=limit)
+
+
+def get_etf_universe(limit: int | None = None):
+    """Same idea as get_universe(), but returns ETFs instead of common stock."""
+    return _build_universe(want_etf=True, limit=limit)
+
+
 if __name__ == "__main__":
     limit = int(sys.argv[1]) if len(sys.argv) > 1 else None
     universe = get_universe(limit=limit)
-    print(f"{len(universe)} symbols")
+    print(f"{len(universe)} stock symbols")
     for row in universe[:20]:
+        print(row)
+    etfs = get_etf_universe(limit=limit)
+    print(f"{len(etfs)} ETF symbols")
+    for row in etfs[:20]:
         print(row)

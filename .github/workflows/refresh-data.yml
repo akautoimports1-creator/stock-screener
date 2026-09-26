@@ -6,9 +6,6 @@ on:
     - cron: "0 6 * * *"
   workflow_dispatch: {}  # lets you trigger a run manually from the Actions tab
 
-permissions:
-  contents: write
-
 jobs:
   fetch:
     runs-on: ubuntu-latest
@@ -71,4 +68,69 @@ jobs:
           git add data/stocks.json data/meta.json
           git diff --cached --quiet && echo "No changes to commit" && exit 0
           git commit -m "Refresh stock data $(date -u +%Y-%m-%d)"
+          git pull --rebase
+          git push
+
+  fetch-etfs:
+    runs-on: ubuntu-latest
+    strategy:
+      # ETFs are a much smaller universe than the full stock list, so 4
+      # shards is plenty to keep each job's runtime reasonable.
+      matrix:
+        shard: [0, 1, 2, 3]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Fetch ETF shard ${{ matrix.shard }}
+        env:
+          SHARD_INDEX: ${{ matrix.shard }}
+          SHARD_COUNT: 4
+        run: python scripts/fetch_etf_data.py
+
+      - name: Upload shard result
+        uses: actions/upload-artifact@v4
+        with:
+          name: etf-shard-${{ matrix.shard }}
+          path: data/etf-shard-${{ matrix.shard }}.json
+          retention-days: 1
+
+  merge-etfs:
+    needs: fetch-etfs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download all ETF shard results
+        uses: actions/download-artifact@v4
+        with:
+          path: data
+          pattern: etf-shard-*
+          merge-multiple: true
+
+      - name: Merge shards into etfs.json
+        run: python scripts/merge_etfs.py
+
+      - name: Clean up shard files
+        run: rm -f data/etf-shard-*.json
+
+      - name: Commit updated data
+        run: |
+          git config user.name "stock-screener-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git pull --rebase
+          git add data/etfs.json data/etf_meta.json
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "Refresh ETF data $(date -u +%Y-%m-%d)"
           git push

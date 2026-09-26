@@ -301,6 +301,29 @@
   }
   .theme-toggle:hover{ border-color: var(--gold); }
 
+  .tabs{
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tab-btn{
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--ink-soft);
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 10px 4px 12px;
+    cursor: pointer;
+    margin-bottom: -1px;
+  }
+  .tab-btn:hover{ color: var(--ink); }
+  .tab-btn.active{ color: var(--gold); border-bottom-color: var(--gold); }
+  .view-panel{ display: none; }
+  .view-panel.active{ display: block; }
+
   .lookup{
     padding: 18px;
     margin-bottom: 18px;
@@ -469,6 +492,12 @@
     <div class="meta-line" id="metaLine">Loading data…</div>
   </header>
 
+  <div class="tabs">
+    <button class="tab-btn active" id="tabStocks" type="button" data-view="stocks">Stocks</button>
+    <button class="tab-btn" id="tabEtfs" type="button" data-view="etfs">ETFs</button>
+  </div>
+
+  <div class="view-panel active" id="stocksView">
   <div class="panel lookup" id="detailPanel">
     <div class="lookup-label">Look up a symbol</div>
     <div class="lookup-inputwrap">
@@ -602,6 +631,126 @@
     <button id="prevPage" type="button">← Prev</button>
     <span id="pageLabel">Page 1</span>
     <button id="nextPage" type="button">Next →</button>
+  </div>
+  </div>
+
+  <div class="view-panel" id="etfsView">
+  <div class="panel lookup" id="etfDetailPanel">
+    <div class="lookup-label">Look up a fund</div>
+    <div class="lookup-inputwrap">
+      <input type="text" id="etfLookupInput" placeholder="Type a ticker — VOO, QQQ, SCHD…" autocomplete="off" spellcheck="false">
+      <div class="suggest" id="etfLookupSuggest"></div>
+    </div>
+    <div class="lc-placeholder" id="etfLcPlaceholder">Type a symbol above, or click any fund in the table below.</div>
+    <div class="lookup-card" id="etfLookupCard">
+      <div class="lc-head">
+        <div>
+          <div class="lc-name" id="etfLcName">—</div>
+          <div class="lc-meta" id="etfLcMeta">—</div>
+        </div>
+        <div>
+          <div class="lc-price" id="etfLcPrice">—</div>
+          <div style="text-align:right; margin-top:4px;"><span class="pill" id="etfLcVerdict">—</span></div>
+        </div>
+      </div>
+      <div class="lc-breakdown" id="etfLcBreakdown">
+        <div class="lcb-row"><span class="lcb-label">Expense ratio</span><span class="lcb-val" id="etfLcbExp">—</span></div>
+        <div class="lcb-row"><span class="lcb-label">1-year change</span><span class="lcb-val" id="etfLcbRet">—</span></div>
+        <div class="lcb-total"><span>Total score</span><span id="etfLcbTotal">—</span></div>
+      </div>
+      <div class="lc-cards">
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">Expense Ratio</span><span class="mark na" id="etfLcMarkExp">–</span></div>
+          <div class="lc-ratio-val" id="etfLcExp">—</div>
+        </div>
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">1-Year Change</span><span class="mark na" id="etfLcMarkRet">–</span></div>
+          <div class="lc-ratio-val" id="etfLcRet">—</div>
+        </div>
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">AUM</span></div>
+          <div class="lc-ratio-val" id="etfLcAum">—</div>
+        </div>
+      </div>
+      <div class="lc-empty" id="etfLcEmpty" style="display:none;">No data available for this fund yet.</div>
+      <div class="lc-cards lc-cards2">
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">52-Week Range</span></div>
+          <div class="lc-range-val" id="etfLc52w">—</div>
+          <div class="lc-range-bar"><div class="lc-range-fill" id="etfLcRangeFill" style="width:0%;"></div></div>
+        </div>
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">Category</span></div>
+          <div class="lc-range-val" id="etfLcCategory">—</div>
+        </div>
+        <div class="lc-ratio">
+          <div class="lc-ratio-top"><span class="lc-ratio-label">Distribution Yield</span></div>
+          <div class="lc-range-val" id="etfLcYield">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel filters">
+    <div class="field wide">
+      <label for="etfSearch">Search symbol or name</label>
+      <input type="text" id="etfSearch" placeholder="VOO, Vanguard…" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="etfCategory">Category</label>
+      <select id="etfCategory"><option value="">All categories</option></select>
+    </div>
+    <div class="field">
+      <label>Expense ratio ≤ (%)</label>
+      <input type="text" inputmode="decimal" id="etfExpMax" placeholder="e.g. 0.5">
+    </div>
+    <div class="field">
+      <label>AUM ≥ ($M)</label>
+      <input type="text" inputmode="decimal" id="etfAumMin" placeholder="e.g. 100">
+    </div>
+    <div class="field">
+      <label>Distribution yield ≥ (%)</label>
+      <input type="text" inputmode="decimal" id="etfYieldMin" placeholder="e.g. 2">
+    </div>
+    <div class="toggles" style="grid-column: 1 / -1;">
+      <label class="toggle"><input type="checkbox" id="etfOnlyBest"> Best value only</label>
+      <label class="toggle"><input type="checkbox" id="etfHideNoData" checked> Hide rows with no data</label>
+      <button class="clear-btn" id="etfClearFilters" type="button">Clear filters</button>
+    </div>
+  </div>
+
+  <div class="resultbar">
+    <span id="etfResultCount">—</span>
+    <span>Click a column to sort</span>
+  </div>
+
+  <div class="tablewrap">
+    <table id="etfTable">
+      <thead>
+        <tr>
+          <th data-key="symbol">Symbol</th>
+          <th data-key="name">Name</th>
+          <th data-key="category">Category</th>
+          <th data-key="price" class="num">Price</th>
+          <th data-key="expenseRatio" class="num">Expense Ratio</th>
+          <th data-key="totalAssets" class="num">AUM</th>
+          <th data-key="distributionYield" class="num">Yield</th>
+          <th data-key="yearChange" class="num">1Y Change</th>
+          <th data-key="fiftyTwoWeekHigh" class="num">52W Range</th>
+          <th data-key="_score" class="sorted">Verdict</th>
+        </tr>
+      </thead>
+      <tbody id="etfTableBody">
+        <tr><td colspan="10" class="loading-state">Loading ETF data…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <button id="etfPrevPage" type="button">← Prev</button>
+    <span id="etfPageLabel">Page 1</span>
+    <button id="etfNextPage" type="button">Next →</button>
+  </div>
   </div>
 
   <footer>
@@ -1184,6 +1333,437 @@
     updateToggleIcon();
   });
   applyStoredTheme();
+
+  // --- Tabs: switch between the Stocks view and the ETFs view ---
+  var tabButtons = { stocks: document.getElementById('tabStocks'), etfs: document.getElementById('tabEtfs') };
+  var viewPanels = { stocks: document.getElementById('stocksView'), etfs: document.getElementById('etfsView') };
+  var etfLoaded = false;
+  Object.keys(tabButtons).forEach(function(key){
+    tabButtons[key].addEventListener('click', function(){
+      Object.keys(tabButtons).forEach(function(k){
+        tabButtons[k].classList.toggle('active', k === key);
+        viewPanels[k].classList.toggle('active', k === key);
+      });
+      if (key === 'etfs' && !etfLoaded){
+        etfLoaded = true;
+        loadEtfMeta();
+        loadEtfs();
+      }
+    });
+  });
+
+  // ============================================================
+  // ETFs — separate dataset, filters, and scoring from the stocks
+  // above. ETFs don't have earnings, so instead of P/E/PEG this
+  // scores on cost (expense ratio) and recent performance (1-year
+  // price change).
+  // ============================================================
+  var etfAllRows = [];
+  var etfFilteredRows = [];
+  var etfSortKey = '_score';
+  var etfSortDir = -1;
+  var etfPage = 1;
+  var etfSelectedSymbol = null;
+
+  var etfEls = {
+    search: document.getElementById('etfSearch'),
+    category: document.getElementById('etfCategory'),
+    expMax: document.getElementById('etfExpMax'),
+    aumMin: document.getElementById('etfAumMin'),
+    yieldMin: document.getElementById('etfYieldMin'),
+    onlyBest: document.getElementById('etfOnlyBest'),
+    hideNoData: document.getElementById('etfHideNoData'),
+    clearFilters: document.getElementById('etfClearFilters'),
+    tableBody: document.getElementById('etfTableBody'),
+    resultCount: document.getElementById('etfResultCount'),
+    prevPage: document.getElementById('etfPrevPage'),
+    nextPage: document.getElementById('etfNextPage'),
+    pageLabel: document.getElementById('etfPageLabel'),
+    lookupInput: document.getElementById('etfLookupInput'),
+    lookupSuggest: document.getElementById('etfLookupSuggest'),
+    lookupCard: document.getElementById('etfLookupCard'),
+    lcPlaceholder: document.getElementById('etfLcPlaceholder'),
+    detailPanel: document.getElementById('etfDetailPanel')
+  };
+
+  function scoreHigh(val, good, fair){
+    if (val === null || val === undefined || isNaN(val)) return null;
+    if (val >= good) return 2;
+    if (val >= fair) return 1;
+    return 0;
+  }
+
+  function fmtPct(v, decimals){
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    return (Number(v) * 100).toFixed(decimals === undefined ? 2 : decimals) + '%';
+  }
+
+  var EXP_GOOD = 0.001, EXP_FAIR = 0.005;   // 0.10% / 0.50%
+  var RET_GOOD = 0.15, RET_FAIR = 0;        // +15% / breakeven
+
+  function computeEtfVerdict(row){
+    var sExp = scoreOne(row.expenseRatio, EXP_GOOD, EXP_FAIR);
+    var sRet = scoreHigh(row.yearChange, RET_GOOD, RET_FAIR);
+    var total = 0, max = 0;
+    [sExp, sRet].forEach(function(s){ if (s !== null){ total += s; max += 2; } });
+    if (max === 0) return { label: 'No data', cls: 'na', total: 0, max: 0 };
+    var ratio = total / max;
+    if (ratio >= 0.75) return { label: 'Best value', cls: 'good', total: total, max: max };
+    if (ratio >= 0.25) return { label: 'Fair', cls: 'warn', total: total, max: max };
+    return { label: 'Costly', cls: 'bad', total: total, max: max };
+  }
+
+  function populateEtfCategories(rows){
+    var cats = Array.from(new Set(rows.map(function(r){ return r.category; }).filter(Boolean))).sort();
+    cats.forEach(function(c){
+      var opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      etfEls.category.appendChild(opt);
+    });
+  }
+
+  function applyEtfFilters(){
+    var q = etfEls.search.value.trim().toLowerCase();
+    var category = etfEls.category.value;
+    var expMax = num(etfEls.expMax.value);
+    var aumMin = num(etfEls.aumMin.value);
+    var yieldMin = num(etfEls.yieldMin.value);
+    var onlyBest = etfEls.onlyBest.checked;
+    var hideNoData = etfEls.hideNoData.checked;
+
+    etfFilteredRows = etfAllRows.filter(function(r){
+      if (r.error) return false;
+      if (q && !((r.symbol||'').toLowerCase().indexOf(q) > -1 || (r.name||'').toLowerCase().indexOf(q) > -1)) return false;
+      if (category && r.category !== category) return false;
+      // expMax is entered as a percent (e.g. 0.5 for 0.50%); expenseRatio is stored as a fraction.
+      if (expMax !== null && !(r.expenseRatio !== null && r.expenseRatio !== undefined && r.expenseRatio <= expMax / 100)) return false;
+      if (aumMin !== null && !(r.totalAssets >= aumMin * 1e6)) return false;
+      if (yieldMin !== null && !(r.distributionYield !== null && r.distributionYield !== undefined && r.distributionYield * 100 >= yieldMin)) return false;
+
+      var verdict = computeEtfVerdict(r);
+      r._verdict = verdict;
+
+      if (hideNoData && verdict.max === 0) return false;
+      if (onlyBest && verdict.label !== 'Best value') return false;
+
+      return true;
+    });
+
+    sortEtfRows();
+    etfPage = 1;
+    renderEtfs();
+  }
+
+  function sortEtfRows(){
+    etfFilteredRows.sort(function(a, b){
+      var av, bv;
+      if (etfSortKey === '_score'){
+        var aV = a._verdict, bV = b._verdict;
+        var aRatio = aV ? aV.total / (aV.max || 1) : -1;
+        var bRatio = bV ? bV.total / (bV.max || 1) : -1;
+        if (aRatio !== bRatio) return (aRatio - bRatio) * etfSortDir;
+        av = aV ? aV.max : 0;
+        bv = bV ? bV.max : 0;
+        return (av - bv) * etfSortDir;
+      } else {
+        av = a[etfSortKey]; bv = b[etfSortKey];
+      }
+      if (typeof av === 'string' || typeof bv === 'string'){
+        av = (av || '').toString().toLowerCase();
+        bv = (bv || '').toString().toLowerCase();
+        if (av < bv) return -1 * etfSortDir;
+        if (av > bv) return 1 * etfSortDir;
+        return 0;
+      }
+      av = (av === null || av === undefined || isNaN(av)) ? -Infinity : av;
+      bv = (bv === null || bv === undefined || isNaN(bv)) ? -Infinity : bv;
+      return (av - bv) * etfSortDir;
+    });
+  }
+
+  function renderEtfs(){
+    var total = etfFilteredRows.length;
+    etfEls.resultCount.textContent = total.toLocaleString() + ' of ' + etfAllRows.length.toLocaleString() + ' funds';
+
+    var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (etfPage > totalPages) etfPage = totalPages;
+    var start = (etfPage - 1) * PAGE_SIZE;
+    var pageRows = etfFilteredRows.slice(start, start + PAGE_SIZE);
+
+    etfEls.pageLabel.textContent = 'Page ' + etfPage + ' of ' + totalPages;
+    etfEls.prevPage.disabled = etfPage <= 1;
+    etfEls.nextPage.disabled = etfPage >= totalPages;
+
+    if (pageRows.length === 0){
+      etfEls.tableBody.innerHTML = '<tr><td colspan="10" class="empty-state">No funds match these filters.</td></tr>';
+      return;
+    }
+
+    var html = pageRows.map(function(r){
+      var v = r._verdict || computeEtfVerdict(r);
+      return '<tr data-symbol="' + escapeHtml(r.symbol || '') + '"' + (r.symbol === etfSelectedSymbol ? ' class="selected-row"' : '') + '>' +
+        '<td class="sym">' + r.symbol + '</td>' +
+        '<td class="name-cell" title="' + escapeHtml(r.name || '') + '">' + escapeHtml(r.name || '—') + '</td>' +
+        '<td>' + escapeHtml(r.category || '—') + '</td>' +
+        '<td class="num">' + fmtPrice(r.price) + '</td>' +
+        '<td class="num">' + fmtPct(r.expenseRatio) + '</td>' +
+        '<td class="num">' + fmtCap(r.totalAssets) + '</td>' +
+        '<td class="num">' + fmtPct(r.distributionYield) + '</td>' +
+        '<td class="num">' + fmtPct(r.yearChange) + '</td>' +
+        '<td class="num">' + fmtRange(r.fiftyTwoWeekLow, r.fiftyTwoWeekHigh) + '</td>' +
+        '<td><span class="pill ' + v.cls + '">' + v.label + (v.max ? ' ' + v.total + '/' + v.max : '') + '</span></td>' +
+        '</tr>';
+    }).join('');
+    etfEls.tableBody.innerHTML = html;
+  }
+
+  document.querySelectorAll('#etfTable thead th').forEach(function(th){
+    th.addEventListener('click', function(){
+      var key = th.getAttribute('data-key');
+      if (etfSortKey === key){ etfSortDir *= -1; } else { etfSortKey = key; etfSortDir = key === 'symbol' || key === 'name' || key === 'category' ? 1 : -1; }
+      document.querySelectorAll('#etfTable thead th').forEach(function(h){ h.classList.remove('sorted'); });
+      th.classList.add('sorted');
+      sortEtfRows();
+      etfPage = 1;
+      renderEtfs();
+    });
+  });
+
+  [etfEls.search, etfEls.expMax, etfEls.aumMin, etfEls.yieldMin].forEach(function(el){
+    el.addEventListener('input', debounce(applyEtfFilters, 200));
+  });
+  [etfEls.category, etfEls.hideNoData].forEach(function(el){
+    el.addEventListener('change', applyEtfFilters);
+  });
+  etfEls.onlyBest.addEventListener('change', function(){
+    if (etfEls.onlyBest.checked){
+      etfSortKey = '_score';
+      etfSortDir = -1;
+      document.querySelectorAll('#etfTable thead th').forEach(function(h){ h.classList.remove('sorted'); });
+      var verdictTh = document.querySelector('#etfTable thead th[data-key="_score"]');
+      if (verdictTh) verdictTh.classList.add('sorted');
+    }
+    applyEtfFilters();
+  });
+  etfEls.clearFilters.addEventListener('click', function(){
+    etfEls.search.value = ''; etfEls.category.value = '';
+    etfEls.expMax.value = ''; etfEls.aumMin.value = ''; etfEls.yieldMin.value = '';
+    etfEls.onlyBest.checked = false;
+    etfEls.hideNoData.checked = true;
+    applyEtfFilters();
+  });
+  etfEls.prevPage.addEventListener('click', function(){ if (etfPage > 1){ etfPage--; renderEtfs(); } });
+  etfEls.nextPage.addEventListener('click', function(){ etfPage++; renderEtfs(); });
+
+  etfEls.tableBody.addEventListener('click', function(e){
+    var tr = e.target.closest('tr[data-symbol]');
+    if (!tr) return;
+    var sym = tr.getAttribute('data-symbol');
+    if (!sym) return;
+    var row = etfAllRows.find(function(r){ return r.symbol === sym; });
+    if (!row) return;
+    selectEtfSymbol(row);
+  });
+
+  function selectEtfSymbol(row){
+    if (!row) return;
+    etfSelectedSymbol = row.symbol;
+    etfEls.lookupInput.value = row.symbol;
+    etfEls.lookupSuggest.classList.remove('show');
+    Array.prototype.forEach.call(etfEls.tableBody.querySelectorAll('tr[data-symbol]'), function(tr){
+      tr.classList.toggle('selected-row', tr.getAttribute('data-symbol') === row.symbol);
+    });
+    showEtfLookupCard(row);
+    etfEls.detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function showEtfLookupCard(row){
+    etfEls.lcPlaceholder.style.display = 'none';
+    var v = computeEtfVerdict(row);
+    document.getElementById('etfLcName').textContent = row.name || row.symbol;
+    document.getElementById('etfLcMeta').textContent = [row.symbol, row.category, row.exchange].filter(Boolean).join(' · ');
+    document.getElementById('etfLcPrice').textContent = fmtPrice(row.price);
+
+    var badge = document.getElementById('etfLcVerdict');
+    badge.className = 'pill ' + v.cls;
+    badge.classList.remove('open');
+    badge.textContent = v.label + (v.max ? ' ' + v.total + '/' + v.max : '');
+    document.getElementById('etfLcBreakdown').classList.remove('show');
+
+    fillEtfRatio('Exp', row.expenseRatio, true);
+    fillEtfRatio('Ret', row.yearChange, false);
+    fillEtfBreakdownRow('Exp', row.expenseRatio, true);
+    fillEtfBreakdownRow('Ret', row.yearChange, false);
+    document.getElementById('etfLcbTotal').textContent = (v.max ? v.total + ' / ' + v.max : '0 / 0') + ' — ' + v.label;
+
+    document.getElementById('etfLcEmpty').style.display = v.max === 0 ? 'block' : 'none';
+    document.getElementById('etfLcAum').textContent = fmtCap(row.totalAssets);
+    document.getElementById('etfLcCategory').textContent = row.category || '—';
+    document.getElementById('etfLcYield').textContent = fmtPct(row.distributionYield);
+
+    var lo = row.fiftyTwoWeekLow, hi = row.fiftyTwoWeekHigh, price = row.price;
+    var rangeEl = document.getElementById('etfLc52w');
+    var fillEl = document.getElementById('etfLcRangeFill');
+    if (lo === null || lo === undefined || isNaN(lo) || hi === null || hi === undefined || isNaN(hi) || hi <= lo){
+      rangeEl.textContent = '—';
+      fillEl.style.width = '0%';
+    } else {
+      rangeEl.textContent = fmtRange(lo, hi);
+      var pct = (price === null || price === undefined || isNaN(price)) ? 0 : Math.max(0, Math.min(100, ((price - lo) / (hi - lo)) * 100));
+      fillEl.style.width = pct.toFixed(0) + '%';
+    }
+
+    etfEls.lookupCard.classList.add('show');
+  }
+
+  function fillEtfRatio(prefix, val, lowerIsBetter){
+    var score = lowerIsBetter ? scoreOne(val, EXP_GOOD, EXP_FAIR) : scoreHigh(val, RET_GOOD, RET_FAIR);
+    var mark = document.getElementById('etfLcMark' + prefix);
+    var valEl = document.getElementById('etfLc' + prefix);
+    mark.className = 'mark ' + (score === null ? 'na' : score === 2 ? 'good' : score === 1 ? 'warn' : 'bad');
+    mark.textContent = score === null ? '–' : score === 2 ? '✓' : score === 1 ? '~' : '✕';
+    valEl.textContent = fmtPct(val);
+  }
+
+  function fillEtfBreakdownRow(prefix, val, lowerIsBetter){
+    var el = document.getElementById('etfLcb' + prefix);
+    var score = lowerIsBetter ? scoreOne(val, EXP_GOOD, EXP_FAIR) : scoreHigh(val, RET_GOOD, RET_FAIR);
+    var valText = (val === null || val === undefined || isNaN(val)) ? 'no data' : fmtPct(val);
+    var scoreText;
+    if (score === null){
+      scoreText = 'not scored (missing data)';
+    } else if (lowerIsBetter){
+      scoreText = score === 2 ? '2 pts — cheap (under ' + fmtPct(EXP_GOOD) + ')' :
+        score === 1 ? '1 pt — fair (under ' + fmtPct(EXP_FAIR) + ')' :
+        '0 pts — pricey (' + fmtPct(EXP_FAIR) + ' or higher)';
+    } else {
+      scoreText = score === 2 ? '2 pts — strong (' + fmtPct(RET_GOOD) + ' or better)' :
+        score === 1 ? '1 pt — positive (0% or better)' :
+        '0 pts — negative over the last year';
+    }
+    el.textContent = valText + '  →  ' + scoreText;
+  }
+
+  document.getElementById('etfLcVerdict').addEventListener('click', function(){
+    var badge = document.getElementById('etfLcVerdict');
+    var breakdown = document.getElementById('etfLcBreakdown');
+    var isOpen = breakdown.classList.toggle('show');
+    badge.classList.toggle('open', isOpen);
+  });
+
+  var etfLookupActiveIndex = -1;
+  var etfLookupMatches = [];
+
+  function etfLookupSuggestions(q){
+    q = q.trim().toUpperCase();
+    if (!q) return [];
+    var starts = [], contains = [];
+    for (var i = 0; i < etfAllRows.length; i++){
+      var r = etfAllRows[i];
+      if (!r.symbol) continue;
+      var sym = r.symbol.toUpperCase();
+      var name = (r.name || '').toUpperCase();
+      if (sym.indexOf(q) === 0){ starts.push(r); }
+      else if (sym.indexOf(q) > -1 || name.indexOf(q) > -1){ contains.push(r); }
+      if (starts.length >= 8) break;
+    }
+    return starts.concat(contains).slice(0, 8);
+  }
+
+  function renderEtfSuggestions(matches){
+    etfLookupMatches = matches;
+    etfLookupActiveIndex = -1;
+    if (matches.length === 0){
+      etfEls.lookupSuggest.classList.remove('show');
+      etfEls.lookupSuggest.innerHTML = '';
+      return;
+    }
+    etfEls.lookupSuggest.innerHTML = matches.map(function(r, i){
+      return '<div class="suggest-item" data-idx="' + i + '">' +
+        '<span class="s-sym">' + escapeHtml(r.symbol) + '</span>' +
+        '<span class="s-name">' + escapeHtml(r.name || '') + '</span>' +
+        '</div>';
+    }).join('');
+    etfEls.lookupSuggest.classList.add('show');
+    Array.prototype.forEach.call(etfEls.lookupSuggest.querySelectorAll('.suggest-item'), function(el){
+      el.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        var idx = parseInt(el.getAttribute('data-idx'), 10);
+        selectEtfSymbol(etfLookupMatches[idx]);
+      });
+    });
+  }
+
+  etfEls.lookupInput.addEventListener('input', debounce(function(){
+    renderEtfSuggestions(etfLookupSuggestions(etfEls.lookupInput.value));
+  }, 120));
+
+  etfEls.lookupInput.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowDown'){
+      e.preventDefault();
+      if (etfLookupMatches.length === 0) return;
+      etfLookupActiveIndex = Math.min(etfLookupActiveIndex + 1, etfLookupMatches.length - 1);
+      highlightEtfActive();
+    } else if (e.key === 'ArrowUp'){
+      e.preventDefault();
+      if (etfLookupMatches.length === 0) return;
+      etfLookupActiveIndex = Math.max(etfLookupActiveIndex - 1, 0);
+      highlightEtfActive();
+    } else if (e.key === 'Enter'){
+      if (etfLookupActiveIndex > -1 && etfLookupMatches[etfLookupActiveIndex]){
+        selectEtfSymbol(etfLookupMatches[etfLookupActiveIndex]);
+      } else {
+        var exact = etfAllRows.find(function(r){ return r.symbol && r.symbol.toUpperCase() === etfEls.lookupInput.value.trim().toUpperCase(); });
+        if (exact) selectEtfSymbol(exact);
+        else if (etfLookupMatches[0]) selectEtfSymbol(etfLookupMatches[0]);
+      }
+    } else if (e.key === 'Escape'){
+      etfEls.lookupSuggest.classList.remove('show');
+    }
+  });
+
+  function highlightEtfActive(){
+    Array.prototype.forEach.call(etfEls.lookupSuggest.querySelectorAll('.suggest-item'), function(el, i){
+      el.classList.toggle('active', i === etfLookupActiveIndex);
+    });
+  }
+
+  document.addEventListener('click', function(e){
+    if (!etfEls.lookupSuggest.contains(e.target) && e.target !== etfEls.lookupInput){
+      etfEls.lookupSuggest.classList.remove('show');
+    }
+  });
+
+  function loadEtfMeta(){
+    fetch('./data/etf_meta.json', { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(meta){
+        if (!meta) return;
+        var when = new Date(meta.last_updated);
+        var line = document.createElement('div');
+        line.className = 'meta-line';
+        line.innerHTML = 'ETF data last refreshed <span>' + when.toLocaleString() + '</span> · ' +
+          '<span>' + meta.total_symbols.toLocaleString() + '</span> funds';
+        etfEls.detailPanel.parentNode.insertBefore(line, etfEls.detailPanel);
+      })
+      .catch(function(){});
+  }
+
+  function loadEtfs(){
+    fetch('./data/etfs.json', { cache: 'no-store' })
+      .then(function(r){
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function(rows){
+        etfAllRows = rows;
+        populateEtfCategories(rows);
+        applyEtfFilters();
+      })
+      .catch(function(err){
+        etfEls.tableBody.innerHTML = '<tr><td colspan="10" class="empty-state">Could not load ETF data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
+      });
+  }
 
   loadMeta();
   loadStocks();
