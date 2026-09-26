@@ -854,11 +854,11 @@
           <th data-key="category">Category</th>
           <th data-key="price" class="num">Price</th>
           <th data-key="expenseRatio" class="num">Expense Ratio</th>
-          <th data-key="totalAssets" class="num">AUM</th>
+          <th data-key="totalAssets" class="num sorted">AUM</th>
           <th data-key="distributionYield" class="num">Yield</th>
           <th data-key="yearChange" class="num">1Y Change</th>
           <th data-key="fiftyTwoWeekHigh" class="num">52W Range</th>
-          <th data-key="_score" class="sorted">Verdict</th>
+          <th data-key="_score">Verdict</th>
         </tr>
       </thead>
       <tbody id="etfTableBody">
@@ -1549,8 +1549,22 @@
   // ============================================================
   var etfAllRows = [];
   var etfFilteredRows = [];
-  var etfSortKey = '_score';
+  // Default view: biggest funds (by AUM) first, and within each size tier,
+  // best value first. Clicking any column header switches to a plain sort
+  // on that column instead (see the click handler below).
+  var etfSortKey = '_sizeValue';
   var etfSortDir = -1;
+
+  // Size tiers for the default sort -- bucket first, so a handful of huge
+  // funds don't get interleaved with small ones just because their exact
+  // AUM numbers happen to be close.
+  function etfSizeTier(totalAssets){
+    if (totalAssets === null || totalAssets === undefined || isNaN(totalAssets)) return -1;
+    if (totalAssets >= 10e9) return 3;   // large ($10B+)
+    if (totalAssets >= 1e9) return 2;    // mid ($1B-$10B)
+    if (totalAssets >= 100e6) return 1;  // small ($100M-$1B)
+    return 0;                            // micro (<$100M or unknown)
+  }
   var etfPage = 1;
   var etfSelectedSymbol = null;
 
@@ -1651,9 +1665,21 @@
     renderEtfs();
   }
 
+  function etfVerdictRatio(row){
+    var v = row._verdict;
+    return v ? v.total / (v.max || 1) : -1;
+  }
+
   function sortEtfRows(){
     etfFilteredRows.sort(function(a, b){
       var av, bv;
+      if (etfSortKey === '_sizeValue'){
+        var aTier = etfSizeTier(a.totalAssets), bTier = etfSizeTier(b.totalAssets);
+        if (aTier !== bTier) return bTier - aTier; // big funds first, always
+        var aR = etfVerdictRatio(a), bR = etfVerdictRatio(b);
+        if (aR !== bR) return bR - aR; // best value first within the tier
+        return (b.totalAssets || 0) - (a.totalAssets || 0);
+      }
       if (etfSortKey === '_score'){
         var aV = a._verdict, bV = b._verdict;
         var aRatio = aV ? aV.total / (aV.max || 1) : -1;
