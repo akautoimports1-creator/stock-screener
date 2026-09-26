@@ -48,6 +48,41 @@
       color-scheme: dark;
     }
   }
+  /* Manual override — wins over the OS preference above once the person picks a mode. */
+  :root[data-theme="dark"]{
+    --ink: #e9ede7;
+    --ink-soft: #aab5ac;
+    --paper: #10140f;
+    --paper-raised: #171d16;
+    --line: #2a332a;
+    --line-strong: #3d493c;
+    --gold: #d0a260;
+    --gold-soft: #2e2716;
+    --good: #7cc79c;
+    --good-bg: #163326;
+    --warn: #d8b95d;
+    --warn-bg: #332c14;
+    --bad: #e08b83;
+    --bad-bg: #38201d;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"]{
+    --ink: #14201c;
+    --ink-soft: #445048;
+    --paper: #eef1ec;
+    --paper-raised: #ffffff;
+    --line: #d3d9d0;
+    --line-strong: #a9b3a4;
+    --gold: #a6763a;
+    --gold-soft: #efe2cd;
+    --good: #2f6b4f;
+    --good-bg: #dfeee3;
+    --warn: #8a6a1f;
+    --warn-bg: #f3ead0;
+    --bad: #9c3b34;
+    --bad-bg: #f4dedb;
+    color-scheme: light;
+  }
   *{ box-sizing: border-box; }
   html, body{ margin: 0; }
   body{
@@ -244,6 +279,28 @@
   }
   a{ color: var(--gold); }
 
+  .header-top{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .theme-toggle{
+    background: var(--paper-raised);
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+    border-radius: 999px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+  .theme-toggle:hover{ border-color: var(--gold); }
+
   .lookup{
     padding: 18px;
     margin-bottom: 18px;
@@ -403,7 +460,10 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="eyebrow">Market Screen</div>
+    <div class="header-top">
+      <div class="eyebrow">Market Screen</div>
+      <button class="theme-toggle" id="themeToggle" type="button" title="Toggle dark / light mode">🌙</button>
+    </div>
     <h1>Ratio Exchange</h1>
     <p class="sub">Every US-listed common stock, scored on P/E, forward P/E, and PEG. Refreshed nightly. Not financial advice — a filter to point your own research at.</p>
     <div class="meta-line" id="metaLine">Loading data…</div>
@@ -529,7 +589,7 @@
           <th data-key="fiftyTwoWeekHigh" class="num">52W Range</th>
           <th data-key="recommendationKey">Analyst</th>
           <th data-key="newsScore">News</th>
-          <th data-key="_score">Verdict</th>
+          <th data-key="_score" class="sorted">Verdict</th>
         </tr>
       </thead>
       <tbody id="tableBody">
@@ -553,7 +613,7 @@
 (function(){
   var allRows = [];
   var filteredRows = [];
-  var sortKey = 'marketCap';
+  var sortKey = '_score';
   var sortDir = -1;
   var page = 1;
   var PAGE_SIZE = 50;
@@ -778,8 +838,20 @@
   [els.search, els.peMin, els.peMax, els.fpeMin, els.fpeMax, els.pegMin, els.pegMax, els.mcapMin].forEach(function(el){
     el.addEventListener('input', debounce(applyFilters, 200));
   });
-  [els.sector, els.onlyUndervalued, els.hideNoData].forEach(function(el){
+  [els.sector, els.hideNoData].forEach(function(el){
     el.addEventListener('change', applyFilters);
+  });
+  els.onlyUndervalued.addEventListener('change', function(){
+    // When switching this on, jump to a best-to-worst ranking automatically
+    // so the top of the table is the most undervalued stock.
+    if (els.onlyUndervalued.checked){
+      sortKey = '_score';
+      sortDir = -1;
+      document.querySelectorAll('#stockTable thead th').forEach(function(h){ h.classList.remove('sorted'); });
+      var verdictTh = document.querySelector('#stockTable thead th[data-key="_score"]');
+      if (verdictTh) verdictTh.classList.add('sorted');
+    }
+    applyFilters();
   });
   els.clearFilters.addEventListener('click', function(){
     els.search.value = ''; els.sector.value = '';
@@ -1076,6 +1148,33 @@
         els.tableBody.innerHTML = '<tr><td colspan="12" class="empty-state">Could not load stock data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
       });
   }
+
+  // --- Dark / light mode toggle (defaults to following the OS setting until picked) ---
+  var themeToggle = document.getElementById('themeToggle');
+  function isDarkActive(){
+    var current = document.documentElement.getAttribute('data-theme');
+    if (current === 'dark') return true;
+    if (current === 'light') return false;
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  function updateToggleIcon(){
+    themeToggle.textContent = isDarkActive() ? '☀️' : '🌙';
+  }
+  function applyStoredTheme(){
+    var saved = null;
+    try { saved = localStorage.getItem('re-theme'); } catch (e){}
+    if (saved === 'dark' || saved === 'light'){
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+    updateToggleIcon();
+  }
+  themeToggle.addEventListener('click', function(){
+    var next = isDarkActive() ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('re-theme', next); } catch (e){}
+    updateToggleIcon();
+  });
+  applyStoredTheme();
 
   loadMeta();
   loadStocks();
