@@ -761,8 +761,17 @@
     filteredRows.sort(function(a, b){
       var av, bv;
       if (sortKey === '_score'){
-        av = a._verdict ? a._verdict.total / (a._verdict.max || 1) : -1;
-        bv = b._verdict ? b._verdict.total / (b._verdict.max || 1) : -1;
+        // Rank by the ratio (score / metrics available) first, so a stock
+        // with only 1 metric never beats one with all 3 just because both
+        // hit 100%. Ties on that ratio are then broken by how many metrics
+        // actually backed it up — a verified 6/6 outranks a thin 2/2.
+        var aV = a._verdict, bV = b._verdict;
+        var aRatio = aV ? aV.total / (aV.max || 1) : -1;
+        var bRatio = bV ? bV.total / (bV.max || 1) : -1;
+        if (aRatio !== bRatio) return (aRatio - bRatio) * sortDir;
+        av = aV ? aV.max : 0;
+        bv = bV ? bV.max : 0;
+        return (av - bv) * sortDir;
       } else {
         av = a[sortKey]; bv = b[sortKey];
       }
