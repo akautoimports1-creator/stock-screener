@@ -135,7 +135,35 @@ def compute_rate_snapshot():
         "currentRange": {"lower": current_lower, "upper": current_upper},
         "asOfDate": upper[-1][0],
         "lastChange": last_change,
+        "lastMeeting": last_meeting_action(upper, datetime.now(timezone.utc).date()),
     }
+
+
+def last_meeting_action(upper_series, today: date):
+    """What actually happened at the most recent PAST scheduled FOMC meeting
+    — distinct from last_change above, which is the last time the rate
+    moved at all (could be several meetings ago if the Fed has been
+    holding). This answers "what did they do last meeting", including the
+    "held steady" case last_change alone can't express."""
+    past_meetings = [d for d in FOMC_MEETINGS if datetime.strptime(d, "%Y-%m-%d").date() <= today]
+    if not past_meetings:
+        return None
+    meeting_date = past_meetings[-1]
+
+    before_val = None
+    after_val = None
+    for d, v in upper_series:
+        if d < meeting_date:
+            before_val = v
+        if d >= meeting_date and after_val is None:
+            after_val = v
+
+    if before_val is None or after_val is None:
+        return {"date": meeting_date, "action": "unknown", "bps": None}
+
+    bps = round((after_val - before_val) * 100)
+    action = "raised" if bps > 0 else "cut" if bps < 0 else "held"
+    return {"date": meeting_date, "action": action, "bps": abs(bps)}
 
 
 def next_meeting(today: date):

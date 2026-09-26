@@ -262,10 +262,11 @@
   }
   .fed-grid{
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 14px;
   }
-  @media (max-width: 760px){ .fed-grid{ grid-template-columns: 1fr; } }
+  @media (max-width: 900px){ .fed-grid{ grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px){ .fed-grid{ grid-template-columns: 1fr; } }
   .fed-card{
     border: 1px solid var(--line);
     border-radius: 8px;
@@ -702,6 +703,11 @@
       <div class="fed-card-sub" id="fedAsOf">—</div>
     </div>
     <div class="fed-grid">
+      <div class="fed-card">
+        <div class="fed-card-label">Last FOMC Meeting</div>
+        <div class="fed-card-main" id="fedLastMeetingDate">—</div>
+        <div class="fed-card-sub" id="fedLastMeetingAction">—</div>
+      </div>
       <div class="fed-card">
         <div class="fed-card-label">Current Target Range</div>
         <div class="fed-card-main" id="fedRange">—</div>
@@ -1895,6 +1901,32 @@
       } else {
         moveEl.textContent = 'No change found in the available history';
       }
+    }
+
+    // Last FOMC meeting: what actually happened at the most recent
+    // scheduled meeting (distinct from "last move" above, which is the
+    // last time the rate changed at all — could be several holds ago).
+    var lmDateEl = document.getElementById('fedLastMeetingDate');
+    var lmActionEl = document.getElementById('fedLastMeetingAction');
+    var lm = rate.lastMeeting;
+    if (rate.error){
+      lmDateEl.textContent = 'No data';
+      lmActionEl.textContent = rate.error;
+    } else if (lm && lm.date){
+      var lmDate = new Date(lm.date + 'T00:00:00Z');
+      lmDateEl.textContent = lmDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+      if (lm.action === 'raised'){
+        lmActionEl.textContent = 'Raised ' + lm.bps + ' bps';
+      } else if (lm.action === 'cut'){
+        lmActionEl.textContent = 'Cut ' + lm.bps + ' bps';
+      } else if (lm.action === 'held'){
+        lmActionEl.textContent = 'Held steady';
+      } else {
+        lmActionEl.textContent = 'Could not determine';
+      }
+    } else {
+      lmDateEl.textContent = 'Unknown';
+      lmActionEl.textContent = '—';
     }
 
     // Next meeting + countdown
