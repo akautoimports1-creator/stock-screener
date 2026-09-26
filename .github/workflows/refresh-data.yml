@@ -133,8 +133,8 @@ jobs:
         run: |
           git config user.name "stock-screener-bot"
           git config user.email "actions@users.noreply.github.com"
-          git pull --rebase
           git add data/etfs.json data/etf_meta.json
           git diff --cached --quiet && echo "No changes to commit" && exit 0
           git commit -m "Refresh ETF data $(date -u +%Y-%m-%d)"
+          git pull --rebase
           git push
