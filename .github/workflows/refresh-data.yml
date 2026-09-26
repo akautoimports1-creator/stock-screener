@@ -138,3 +138,35 @@ jobs:
           git commit -m "Refresh ETF data $(date -u +%Y-%m-%d)"
           git pull --rebase
           git push
+
+  fetch-fed:
+    # Runs after merge-etfs, same serial chain as everything else, so its
+    # commit never races another job's push. It's a single light job (two
+    # small FRED API calls + a handful of news headlines) so it doesn't
+    # need sharding.
+    needs: merge-etfs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Fetch Fed rate snapshot
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: python scripts/fetch_fed_data.py
+
+      - name: Commit updated data
+        run: |
+          git config user.name "stock-screener-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/fed.json
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "Refresh Fed rate data $(date -u +%Y-%m-%d)"
+          git pull --rebase
+          git push

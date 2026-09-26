@@ -241,6 +241,67 @@
   .pill.bad{ background: var(--bad-bg); color: var(--bad); }
   .pill.na{ background: var(--line); color: var(--ink-soft); }
 
+  .fed-panel{
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .fed-head{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .fed-title{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .fed-grid{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 760px){ .fed-grid{ grid-template-columns: 1fr; } }
+  .fed-card{
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .fed-card-label{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .fed-card-main{
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .fed-card-sub{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+  .fed-headlines{
+    margin-top: 12px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+  .fed-headlines ul{ margin: 6px 0 0; padding-left: 18px; }
+  .fed-headlines li{ margin-bottom: 4px; }
+  .fed-disclaimer{
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
   .pager{
     display: flex;
     justify-content: center;
@@ -635,6 +696,32 @@
   </div>
 
   <div class="view-panel" id="etfsView">
+  <div class="panel fed-panel" id="fedPanel">
+    <div class="fed-head">
+      <div class="fed-title">Fed Watch</div>
+      <div class="fed-card-sub" id="fedAsOf">—</div>
+    </div>
+    <div class="fed-grid">
+      <div class="fed-card">
+        <div class="fed-card-label">Current Target Range</div>
+        <div class="fed-card-main" id="fedRange">—</div>
+        <div class="fed-card-sub" id="fedLastMove">—</div>
+      </div>
+      <div class="fed-card">
+        <div class="fed-card-label">Next FOMC Meeting</div>
+        <div class="fed-card-main" id="fedNextMeeting">—</div>
+        <div class="fed-card-sub" id="fedNextMeetingCountdown">—</div>
+      </div>
+      <div class="fed-card">
+        <div class="fed-card-label">News Lean (heuristic)</div>
+        <div class="fed-card-main"><span class="pill na" id="fedLeanPill">—</span></div>
+        <div class="fed-card-sub" id="fedLeanDetail">—</div>
+      </div>
+    </div>
+    <div class="fed-headlines" id="fedHeadlines" style="display:none;"></div>
+    <div class="fed-disclaimer">Not real market-implied odds (that's what CME FedWatch sells) — this is a same-day scan of financial headlines for hawkish vs. dovish language, counted, nothing more. Treat it as "which way recent coverage leans," not a probability.</div>
+  </div>
+
   <div class="panel lookup" id="etfDetailPanel">
     <div class="lookup-label">Look up a fund</div>
     <div class="lookup-inputwrap">
@@ -1348,6 +1435,7 @@
         etfLoaded = true;
         loadEtfMeta();
         loadEtfs();
+        loadFed();
       }
     });
   });
@@ -1771,6 +1859,90 @@
       .catch(function(err){
         etfEls.tableBody.innerHTML = '<tr><td colspan="10" class="empty-state">Could not load ETF data (' + escapeHtml(err.message) + '). If this is a fresh deploy, the nightly data job may not have run yet — trigger it manually from the GitHub Actions tab.</td></tr>';
       });
+  }
+
+  function loadFed(){
+    fetch('./data/fed.json', { cache: 'no-store' })
+      .then(function(r){
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(renderFed)
+      .catch(function(err){
+        document.getElementById('fedAsOf').textContent = 'Could not load Fed data (' + escapeHtml(err.message) + ').';
+      });
+  }
+
+  function renderFed(data){
+    var asOfEl = document.getElementById('fedAsOf');
+    if (data.generated){
+      asOfEl.textContent = 'Updated ' + new Date(data.generated).toLocaleString();
+    }
+
+    // Current target range + last move
+    var rate = data.rate || {};
+    var rangeEl = document.getElementById('fedRange');
+    var moveEl = document.getElementById('fedLastMove');
+    if (rate.error){
+      rangeEl.textContent = 'No data';
+      moveEl.textContent = rate.error;
+    } else if (rate.currentRange){
+      rangeEl.textContent = rate.currentRange.lower.toFixed(2) + '% – ' + rate.currentRange.upper.toFixed(2) + '%';
+      var lc = rate.lastChange;
+      if (lc){
+        var verb = lc.direction === 'raised' ? 'Raised' : 'Cut';
+        moveEl.textContent = verb + ' ' + lc.bps + ' bps on ' + lc.date;
+      } else {
+        moveEl.textContent = 'No change found in the available history';
+      }
+    }
+
+    // Next meeting + countdown
+    var nm = data.nextMeeting;
+    var nmEl = document.getElementById('fedNextMeeting');
+    var cdEl = document.getElementById('fedNextMeetingCountdown');
+    if (nm && nm.date){
+      var meetingDate = new Date(nm.date + 'T00:00:00Z');
+      nmEl.textContent = meetingDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+      var daysAway = Math.round((meetingDate - new Date()) / 86400000);
+      cdEl.textContent = daysAway >= 0 ? ('in ' + daysAway + ' day' + (daysAway === 1 ? '' : 's')) : 'decision announced';
+    } else {
+      nmEl.textContent = 'Unknown';
+      cdEl.textContent = 'schedule needs updating — see fetch_fed_data.py';
+    }
+
+    // News lean
+    var lean = data.newsLean || {};
+    var pillEl = document.getElementById('fedLeanPill');
+    var detailEl = document.getElementById('fedLeanDetail');
+    var headlinesEl = document.getElementById('fedHeadlines');
+    if (lean.error){
+      pillEl.className = 'pill na';
+      pillEl.textContent = 'No data';
+      detailEl.textContent = lean.error;
+      headlinesEl.style.display = 'none';
+    } else {
+      var cls = 'na';
+      if (lean.label === 'Leaning toward a cut') cls = 'good';
+      else if (lean.label === 'Leaning toward holding/hiking') cls = 'bad';
+      else if (lean.label === 'Mixed / no clear lean') cls = 'warn';
+      pillEl.className = 'pill ' + cls;
+      pillEl.textContent = lean.label || '—';
+      if (lean.headlineCount){
+        detailEl.textContent = lean.dovishCount + ' dovish vs ' + lean.hawkishCount + ' hawkish, from ' + lean.headlineCount + ' headline' + (lean.headlineCount === 1 ? '' : 's');
+      } else {
+        detailEl.textContent = '';
+      }
+      if (lean.headlines && lean.headlines.length){
+        headlinesEl.style.display = 'block';
+        headlinesEl.innerHTML = 'Recent headlines scanned:<ul>' + lean.headlines.map(function(h){
+          var tag = h.score > 0 ? ' (dovish)' : h.score < 0 ? ' (hawkish)' : '';
+          return '<li>' + escapeHtml(h.title) + tag + '</li>';
+        }).join('') + '</ul>';
+      } else {
+        headlinesEl.style.display = 'none';
+      }
+    }
   }
 
   loadMeta();

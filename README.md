@@ -132,3 +132,29 @@ the stock screener, since ETFs don't have a P/E to score:
 - Both refresh jobs (`fetch`/`merge` for stocks, `fetch-etfs`/`merge-etfs`
   for ETFs) run nightly off the same workflow and push to the repo
   independently, so one can succeed even if the other fails.
+
+## Fed Watch panel (on the ETF tab)
+
+A small panel above the ETF filters showing the current Fed Funds target
+rate, the last hike/cut, the next scheduled FOMC meeting, and a "which way
+is the news leaning" read — `scripts/fetch_fed_data.py` writes it to
+`data/fed.json`, refreshed by the `fetch-fed` job (runs last in the chain,
+after `merge-etfs`).
+
+- **Current rate + last move**: real Fed data from the free FRED API
+  (`DFEDTARU`/`DFEDTARL` series — the daily upper/lower bound of the
+  target range). Requires a **free** API key from
+  <https://fred.stlouisfed.org/docs/api/api_key.html>, stored as the
+  `FRED_API_KEY` GitHub Actions secret (Settings → Secrets and variables →
+  Actions → New repository secret). Without it, the panel shows "No data"
+  for the rate card but the rest still works.
+- **Next FOMC meeting**: hardcoded from the Fed's own published calendar
+  (`FOMC_MEETINGS` in `fetch_fed_data.py`) since the Fed posts these
+  ~1-2 years ahead and they don't change — add next year's dates once
+  <https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm> posts
+  them (usually mid-to-late the prior year).
+- **News lean**: a headline-count heuristic, same honest approach as the
+  stock tab's news sentiment — scans recent Fed/rate headlines for
+  hawkish vs. dovish language and reports which way they lean. This is
+  **not** real market-implied odds (that's what CME's FedWatch tool
+  sells); it's disclosed as a heuristic in the UI itself.
