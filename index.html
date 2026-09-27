@@ -1621,7 +1621,13 @@
       locale: 'en',
       allow_symbol_change: true,
       calendar: false,
-      support_host: 'https://www.tradingview.com'
+      support_host: 'https://www.tradingview.com',
+      // Pivot Points Standard draws the classic support (S1-S3) / resistance
+      // (R1-R3) lines traders mean by "lines of support" — computed from the
+      // prior period's high/low/close, same formula every charting platform
+      // uses. It's a real, free TradingView study (not a custom calculation
+      // here), so it moves and recalculates with the chart automatically.
+      studies: ['PivotPointsStandard@tv-basicstudies']
     });
     wrap.appendChild(script);
     container.appendChild(wrap);
