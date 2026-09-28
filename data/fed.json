@@ -1,11 +1,11 @@
 {
-  "generated": "2026-09-27T11:03:17.409750+00:00",
+  "generated": "2026-09-28T12:15:50.311810+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-09-26",
+    "asOfDate": "2026-09-28",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -25,19 +25,11 @@
   "newsLean": {
     "label": "Leaning toward holding/hiking",
     "dovishCount": 0,
-    "hawkishCount": 2,
-    "headlineCount": 2,
+    "hawkishCount": 1,
+    "headlineCount": 1,
     "headlines": [
       {
         "title": "The Short-Duration Bond ETF Boom Post Fed Hike",
-        "dovishHits": [],
-        "hawkishHits": [
-          "hike"
-        ],
-        "score": -1
-      },
-      {
-        "title": "Market Minute 9-18-26- Japan Joins the Rate Hike Parade",
         "dovishHits": [],
         "hawkishHits": [
           "hike"
