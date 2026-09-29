@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-28T12:15:50.311810+00:00",
+  "generated": "2026-09-29T11:48:33.686708+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
@@ -23,19 +23,10 @@
     "date": "2026-10-28"
   },
   "newsLean": {
-    "label": "Leaning toward holding/hiking",
+    "label": "No recent Fed-specific headlines found",
     "dovishCount": 0,
-    "hawkishCount": 1,
-    "headlineCount": 1,
-    "headlines": [
-      {
-        "title": "The Short-Duration Bond ETF Boom Post Fed Hike",
-        "dovishHits": [],
-        "hawkishHits": [
-          "hike"
-        ],
-        "score": -1
-      }
-    ]
+    "hawkishCount": 0,
+    "headlineCount": 0,
+    "headlines": []
   }
 }
