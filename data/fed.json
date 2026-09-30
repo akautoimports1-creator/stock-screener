@@ -1,11 +1,11 @@
 {
-  "generated": "2026-09-29T11:48:33.686708+00:00",
+  "generated": "2026-09-30T11:35:00.803602+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-09-28",
+    "asOfDate": "2026-09-29",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -23,10 +23,23 @@
     "date": "2026-10-28"
   },
   "newsLean": {
-    "label": "No recent Fed-specific headlines found",
+    "label": "Mixed / no clear lean",
     "dovishCount": 0,
     "hawkishCount": 0,
-    "headlineCount": 0,
-    "headlines": []
+    "headlineCount": 2,
+    "headlines": [
+      {
+        "title": "Bond yields push higher as investors digest global risks, higher-for-longer path for the Fed",
+        "dovishHits": [],
+        "hawkishHits": [],
+        "score": 0
+      },
+      {
+        "title": "How Failed Fed Chair Candidate David Zervos Can Help Scott Bessent Rescue the Treasury Department\u2019s Credibility",
+        "dovishHits": [],
+        "hawkishHits": [],
+        "score": 0
+      }
+    ]
   }
 }
