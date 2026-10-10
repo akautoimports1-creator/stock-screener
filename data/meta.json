@@ -1,9 +1,9 @@
 {
-  "last_updated": "2026-10-09T12:11:47.292939+00:00",
-  "total_symbols": 7330,
-  "with_pe": 3323,
-  "with_forward_pe": 4412,
-  "with_peg": 2394,
+  "last_updated": "2026-10-10T11:29:05.915695+00:00",
+  "total_symbols": 7333,
+  "with_pe": 3314,
+  "with_forward_pe": 4420,
+  "with_peg": 2406,
   "with_news": 0,
-  "errors": 46
+  "errors": 44
 }
