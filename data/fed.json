@@ -1,11 +1,11 @@
 {
-  "generated": "2026-10-18T10:07:24.184613+00:00",
+  "generated": "2026-10-19T11:30:33.722339+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-10-17",
+    "asOfDate": "2026-10-18",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
