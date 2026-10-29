@@ -1,11 +1,11 @@
 {
-  "generated": "2026-10-28T11:51:38.157806+00:00",
+  "generated": "2026-10-29T12:00:15.991346+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-10-27",
+    "asOfDate": "2026-10-28",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -20,7 +20,7 @@
     }
   },
   "nextMeeting": {
-    "date": "2026-10-28"
+    "date": "2026-12-09"
   },
   "newsLean": {
     "label": "No recent Fed-specific headlines found",
