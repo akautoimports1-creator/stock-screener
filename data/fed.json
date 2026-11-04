@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-03T13:13:22.029291+00:00",
+  "generated": "2026-11-04T13:29:56.941526+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-11-03",
+    "asOfDate": "2026-11-04",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -23,10 +23,39 @@
     "date": "2026-12-09"
   },
   "newsLean": {
-    "label": "No recent Fed-specific headlines found",
-    "dovishCount": 0,
-    "hawkishCount": 0,
-    "headlineCount": 0,
-    "headlines": []
+    "label": "Mixed / no clear lean",
+    "dovishCount": 1,
+    "hawkishCount": 1,
+    "headlineCount": 4,
+    "headlines": [
+      {
+        "title": "Google, Microsoft, Amazon, and the Fed step up to a skittish market: What to watch this week",
+        "dovishHits": [],
+        "hawkishHits": [],
+        "score": 0
+      },
+      {
+        "title": "Bond traders are backing off Fed rate hike bets \u2014 here's what it means for mortgage rates",
+        "dovishHits": [],
+        "hawkishHits": [
+          "hike"
+        ],
+        "score": -1
+      },
+      {
+        "title": "Elevated oil prices, delicate housing market put more pressure on the Fed",
+        "dovishHits": [],
+        "hawkishHits": [],
+        "score": 0
+      },
+      {
+        "title": "The Fed Is Cutting Back on Rate Votes for the First Time Since 1981",
+        "dovishHits": [
+          "cut"
+        ],
+        "hawkishHits": [],
+        "score": 1
+      }
+    ]
   }
 }
