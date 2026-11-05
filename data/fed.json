@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-04T13:29:56.941526+00:00",
+  "generated": "2026-11-05T13:44:15.091461+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-11-04",
+    "asOfDate": "2026-11-05",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -26,7 +26,7 @@
     "label": "Mixed / no clear lean",
     "dovishCount": 1,
     "hawkishCount": 1,
-    "headlineCount": 4,
+    "headlineCount": 5,
     "headlines": [
       {
         "title": "Google, Microsoft, Amazon, and the Fed step up to a skittish market: What to watch this week",
@@ -44,6 +44,12 @@
       },
       {
         "title": "Elevated oil prices, delicate housing market put more pressure on the Fed",
+        "dovishHits": [],
+        "hawkishHits": [],
+        "score": 0
+      },
+      {
+        "title": "The Monthly Check From These 3 Treasury ETFs Moves With Interest Rates. Here\u2019s What Retirees Should Expect",
         "dovishHits": [],
         "hawkishHits": [],
         "score": 0
