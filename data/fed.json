@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-07T12:06:09.679199+00:00",
+  "generated": "2026-11-08T12:25:30.965427+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-11-06",
+    "asOfDate": "2026-11-07",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -23,10 +23,10 @@
     "date": "2026-12-09"
   },
   "newsLean": {
-    "label": "Mixed / no clear lean",
+    "label": "Leaning toward holding/hiking",
     "dovishCount": 1,
-    "hawkishCount": 1,
-    "headlineCount": 5,
+    "hawkishCount": 2,
+    "headlineCount": 6,
     "headlines": [
       {
         "title": "Google, Microsoft, Amazon, and the Fed step up to a skittish market: What to watch this week",
@@ -47,6 +47,14 @@
         "dovishHits": [],
         "hawkishHits": [],
         "score": 0
+      },
+      {
+        "title": "Odds of a December Rate Hike Jump to 77% After a Blowout Jobs Report",
+        "dovishHits": [],
+        "hawkishHits": [
+          "hike"
+        ],
+        "score": -1
       },
       {
         "title": "The Monthly Check From These 3 Treasury ETFs Moves With Interest Rates. Here\u2019s What Retirees Should Expect",
