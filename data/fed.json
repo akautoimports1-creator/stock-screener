@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-10T13:59:04.425656+00:00",
+  "generated": "2026-11-11T13:10:27.842623+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-11-10",
+    "asOfDate": "2026-11-11",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -24,18 +24,12 @@
   },
   "newsLean": {
     "label": "Leaning toward holding/hiking",
-    "dovishCount": 1,
-    "hawkishCount": 2,
-    "headlineCount": 6,
+    "dovishCount": 0,
+    "hawkishCount": 3,
+    "headlineCount": 5,
     "headlines": [
       {
-        "title": "Google, Microsoft, Amazon, and the Fed step up to a skittish market: What to watch this week",
-        "dovishHits": [],
-        "hawkishHits": [],
-        "score": 0
-      },
-      {
-        "title": "Bond traders are backing off Fed rate hike bets \u2014 here's what it means for mortgage rates",
+        "title": "A Jumbo Rate Hike Debate is Brewing for the December Fed Meeting as Bond Yields Rip Higher on Hot Inflation Data",
         "dovishHits": [],
         "hawkishHits": [
           "hike"
@@ -43,10 +37,18 @@
         "score": -1
       },
       {
-        "title": "Elevated oil prices, delicate housing market put more pressure on the Fed",
+        "title": "Google, Microsoft, Amazon, and the Fed step up to a skittish market: What to watch this week",
         "dovishHits": [],
         "hawkishHits": [],
         "score": 0
+      },
+      {
+        "title": "A 50-Basis-Point Fed Hike Was Unthinkable \u2013 After CPI, Economists Can't Rule It Out",
+        "dovishHits": [],
+        "hawkishHits": [
+          "hike"
+        ],
+        "score": -1
       },
       {
         "title": "Odds of a December Rate Hike Jump to 77% After a Blowout Jobs Report",
@@ -61,14 +63,6 @@
         "dovishHits": [],
         "hawkishHits": [],
         "score": 0
-      },
-      {
-        "title": "The Fed Is Cutting Back on Rate Votes for the First Time Since 1981",
-        "dovishHits": [
-          "cut"
-        ],
-        "hawkishHits": [],
-        "score": 1
       }
     ]
   }
