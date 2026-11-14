@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-13T13:39:58.916401+00:00",
+  "generated": "2026-11-14T12:43:21.564137+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
@@ -26,7 +26,7 @@
     "label": "Leaning toward holding/hiking",
     "dovishCount": 0,
     "hawkishCount": 3,
-    "headlineCount": 4,
+    "headlineCount": 5,
     "headlines": [
       {
         "title": "A Jumbo Rate Hike Debate is Brewing for the December Fed Meeting as Bond Yields Rip Higher on Hot Inflation Data",
@@ -38,6 +38,12 @@
       },
       {
         "title": "Google, Microsoft, Amazon, and the Fed step up to a skittish market: What to watch this week",
+        "dovishHits": [],
+        "hawkishHits": [],
+        "score": 0
+      },
+      {
+        "title": "Kevin Warsh\u2019s Fed Will Vote on Rates Only 7 Times in 2027",
         "dovishHits": [],
         "hawkishHits": [],
         "score": 0
