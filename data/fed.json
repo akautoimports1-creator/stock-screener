@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-15T13:09:41.162949+00:00",
+  "generated": "2026-11-16T14:13:58.242266+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-11-15",
+    "asOfDate": "2026-11-16",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -26,7 +26,7 @@
     "label": "Leaning toward holding/hiking",
     "dovishCount": 0,
     "hawkishCount": 3,
-    "headlineCount": 5,
+    "headlineCount": 4,
     "headlines": [
       {
         "title": "A Jumbo Rate Hike Debate is Brewing for the December Fed Meeting as Bond Yields Rip Higher on Hot Inflation Data",
@@ -35,12 +35,6 @@
           "hike"
         ],
         "score": -1
-      },
-      {
-        "title": "Google, Microsoft, Amazon, and the Fed step up to a skittish market: What to watch this week",
-        "dovishHits": [],
-        "hawkishHits": [],
-        "score": 0
       },
       {
         "title": "Bessent Tells the Fed Not to Hike \u201cToo Much\u201d",
