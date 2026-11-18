@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-17T15:11:47.296737+00:00",
+  "generated": "2026-11-18T14:47:54.398599+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-11-17",
+    "asOfDate": "2026-11-18",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -37,6 +37,15 @@
         "score": -1
       },
       {
+        "title": "Traders Now See a 95% Chance the Fed Hikes Rates in December",
+        "dovishHits": [],
+        "hawkishHits": [
+          "hike",
+          "hikes"
+        ],
+        "score": -2
+      },
+      {
         "title": "Bessent Tells the Fed Not to Hike \u201cToo Much\u201d",
         "dovishHits": [],
         "hawkishHits": [
@@ -49,14 +58,6 @@
         "dovishHits": [],
         "hawkishHits": [],
         "score": 0
-      },
-      {
-        "title": "A 50-Basis-Point Fed Hike Was Unthinkable \u2013 After CPI, Economists Can't Rule It Out",
-        "dovishHits": [],
-        "hawkishHits": [
-          "hike"
-        ],
-        "score": -1
       }
     ]
   }
