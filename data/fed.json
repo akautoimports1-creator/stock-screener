@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-19T14:54:57.714494+00:00",
+  "generated": "2026-11-20T14:36:42.007029+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-11-19",
+    "asOfDate": "2026-11-20",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -25,11 +25,27 @@
   "newsLean": {
     "label": "Leaning toward holding/hiking",
     "dovishCount": 0,
-    "hawkishCount": 3,
+    "hawkishCount": 4,
     "headlineCount": 4,
     "headlines": [
       {
+        "title": "UK Stock Market Today: FTSE 100 Futures Slip On Hawkish Fed And Pound Weakness",
+        "dovishHits": [],
+        "hawkishHits": [
+          "hawkish"
+        ],
+        "score": -1
+      },
+      {
         "title": "A Jumbo Rate Hike Debate is Brewing for the December Fed Meeting as Bond Yields Rip Higher on Hot Inflation Data",
+        "dovishHits": [],
+        "hawkishHits": [
+          "hike"
+        ],
+        "score": -1
+      },
+      {
+        "title": "Some Fed Officials Wanted to Hike in October. A Half-Point Hike Is on the Table.",
         "dovishHits": [],
         "hawkishHits": [
           "hike"
@@ -44,20 +60,6 @@
           "hikes"
         ],
         "score": -2
-      },
-      {
-        "title": "Bessent Tells the Fed Not to Hike \u201cToo Much\u201d",
-        "dovishHits": [],
-        "hawkishHits": [
-          "hike"
-        ],
-        "score": -1
-      },
-      {
-        "title": "Kevin Warsh\u2019s Fed Will Vote on Rates Only 7 Times in 2027",
-        "dovishHits": [],
-        "hawkishHits": [],
-        "score": 0
       }
     ]
   }
