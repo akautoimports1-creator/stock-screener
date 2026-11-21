@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-20T14:36:42.007029+00:00",
+  "generated": "2026-11-21T13:55:07.225588+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-11-20",
+    "asOfDate": "2026-11-21",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -26,7 +26,7 @@
     "label": "Leaning toward holding/hiking",
     "dovishCount": 0,
     "hawkishCount": 4,
-    "headlineCount": 4,
+    "headlineCount": 5,
     "headlines": [
       {
         "title": "UK Stock Market Today: FTSE 100 Futures Slip On Hawkish Fed And Pound Weakness",
@@ -43,6 +43,12 @@
           "hike"
         ],
         "score": -1
+      },
+      {
+        "title": "The Fed\u2019s Biggest Dove Sees No Clear Path Back to 2% Inflation",
+        "dovishHits": [],
+        "hawkishHits": [],
+        "score": 0
       },
       {
         "title": "Some Fed Officials Wanted to Hike in October. A Half-Point Hike Is on the Table.",
