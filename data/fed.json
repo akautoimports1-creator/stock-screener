@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-23T16:46:48.764839+00:00",
+  "generated": "2026-11-24T16:45:33.561716+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-11-23",
+    "asOfDate": "2026-11-24",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -25,8 +25,8 @@
   "newsLean": {
     "label": "Leaning toward holding/hiking",
     "dovishCount": 0,
-    "hawkishCount": 4,
-    "headlineCount": 5,
+    "hawkishCount": 5,
+    "headlineCount": 7,
     "headlines": [
       {
         "title": "UK Stock Market Today: FTSE 100 Futures Slip On Hawkish Fed And Pound Weakness",
@@ -45,6 +45,30 @@
         "score": -1
       },
       {
+        "title": "Bessent Warns the Fed Could Be Making a \u201cPolicy Mistake\u201d if It Over-Tightens",
+        "dovishHits": [],
+        "hawkishHits": [
+          "tighten",
+          "tightens"
+        ],
+        "score": -2
+      },
+      {
+        "title": "Bill Ackman Says the Fed Is \u201cAbout to Make Another Mistake\u201d on Dec. 9",
+        "dovishHits": [],
+        "hawkishHits": [],
+        "score": 0
+      },
+      {
+        "title": "The New York Fed\u2019s John Williams Won\u2019t Rule Out Back-to-Back Rate Hikes",
+        "dovishHits": [],
+        "hawkishHits": [
+          "hike",
+          "hikes"
+        ],
+        "score": -2
+      },
+      {
         "title": "The Fed\u2019s Biggest Dove Sees No Clear Path Back to 2% Inflation",
         "dovishHits": [],
         "hawkishHits": [],
@@ -57,15 +81,6 @@
           "hike"
         ],
         "score": -1
-      },
-      {
-        "title": "Traders Now See a 95% Chance the Fed Hikes Rates in December",
-        "dovishHits": [],
-        "hawkishHits": [
-          "hike",
-          "hikes"
-        ],
-        "score": -2
       }
     ]
   }
