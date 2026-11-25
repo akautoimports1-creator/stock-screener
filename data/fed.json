@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-24T16:45:33.561716+00:00",
+  "generated": "2026-11-25T16:25:25.983872+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-11-24",
+    "asOfDate": "2026-11-25",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -45,6 +45,14 @@
         "score": -1
       },
       {
+        "title": "Ed Yardeni Wants Double the Fed Rate Hike the Market Expects",
+        "dovishHits": [],
+        "hawkishHits": [
+          "hike"
+        ],
+        "score": -1
+      },
+      {
         "title": "Bessent Warns the Fed Could Be Making a \u201cPolicy Mistake\u201d if It Over-Tightens",
         "dovishHits": [],
         "hawkishHits": [
@@ -73,14 +81,6 @@
         "dovishHits": [],
         "hawkishHits": [],
         "score": 0
-      },
-      {
-        "title": "Some Fed Officials Wanted to Hike in October. A Half-Point Hike Is on the Table.",
-        "dovishHits": [],
-        "hawkishHits": [
-          "hike"
-        ],
-        "score": -1
       }
     ]
   }
