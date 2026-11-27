@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-26T16:01:07.113355+00:00",
+  "generated": "2026-11-27T15:50:02.881404+00:00",
   "rate": {
     "currentRange": {
       "lower": 3.75,
       "upper": 4.0
     },
-    "asOfDate": "2026-11-26",
+    "asOfDate": "2026-11-27",
     "lastChange": {
       "date": "2026-09-17",
       "direction": "raised",
@@ -25,22 +25,14 @@
   "newsLean": {
     "label": "Leaning toward holding/hiking",
     "dovishCount": 0,
-    "hawkishCount": 5,
-    "headlineCount": 7,
+    "hawkishCount": 3,
+    "headlineCount": 4,
     "headlines": [
       {
         "title": "UK Stock Market Today: FTSE 100 Futures Slip On Hawkish Fed And Pound Weakness",
         "dovishHits": [],
         "hawkishHits": [
           "hawkish"
-        ],
-        "score": -1
-      },
-      {
-        "title": "A Jumbo Rate Hike Debate is Brewing for the December Fed Meeting as Bond Yields Rip Higher on Hot Inflation Data",
-        "dovishHits": [],
-        "hawkishHits": [
-          "hike"
         ],
         "score": -1
       },
@@ -53,34 +45,18 @@
         "score": -1
       },
       {
-        "title": "Bessent Warns the Fed Could Be Making a \u201cPolicy Mistake\u201d if It Over-Tightens",
-        "dovishHits": [],
-        "hawkishHits": [
-          "tighten",
-          "tightens"
-        ],
-        "score": -2
-      },
-      {
-        "title": "Bill Ackman Says the Fed Is \u201cAbout to Make Another Mistake\u201d on Dec. 9",
-        "dovishHits": [],
-        "hawkishHits": [],
-        "score": 0
-      },
-      {
-        "title": "The New York Fed\u2019s John Williams Won\u2019t Rule Out Back-to-Back Rate Hikes",
-        "dovishHits": [],
-        "hawkishHits": [
-          "hike",
-          "hikes"
-        ],
-        "score": -2
-      },
-      {
         "title": "The Fed\u2019s Biggest Dove Sees No Clear Path Back to 2% Inflation",
         "dovishHits": [],
         "hawkishHits": [],
         "score": 0
+      },
+      {
+        "title": "Some Fed Officials Wanted to Hike in October. A Half-Point Hike Is on the Table.",
+        "dovishHits": [],
+        "hawkishHits": [
+          "hike"
+        ],
+        "score": -1
       }
     ]
   }
